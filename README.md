@@ -1,4 +1,4 @@
-# AI Research Agent
+# AI Research Agent Service
 
 This project reproduces the research-agent application described in
 [“7 Steps to Building and Deploying Your First Autonomous Agent”](https://www.kdnuggets.com/7-steps-to-building-and-deploying-your-first-autonomous-agent),
@@ -26,6 +26,8 @@ session-scoped in-memory conversation history, sanitized telemetry, and
 graceful shutdown. `GET /health` is a provider-free liveness check; `GET
 /ready` checks authenticated service readiness; `POST /research` runs a
 research request.
+
+[!screenshot](./screenshot.png)
 
 ## What CG AgentFlow contributes to the tutorial reproduction
 
@@ -140,6 +142,17 @@ openssl rand -hex 32
 local startup and required when `NODE_ENV=production`. Validation errors name
 invalid fields without returning supplied values.
 
+If Node.js selects an unreachable IPv6 route to an external provider on your
+system, make it prefer IPv4 for the service process:
+
+```sh
+export NODE_OPTIONS=--dns-result-order=ipv4first
+npm start
+```
+
+This setting is only needed when the default Node.js network path cannot reach
+the provider; it can be omitted on systems without that connectivity issue.
+
 ## Testing the running agent
 
 The deterministic default suite requires no provider credentials, network
@@ -176,7 +189,7 @@ Submit a request:
 curl -sS -X POST http://localhost:3000/research \
   -H "Authorization: Bearer $RESEARCH_API_KEY" \
   -H 'content-type: application/json' \
-  -d '{"topic":"How do current battery technologies compare?"}'
+  -d '{"topic":"How do current battery technologies compare?"}' | jq
 ```
 
 The response includes a normalized topic, generated `sessionId` and `runId`,
@@ -196,15 +209,4 @@ an in-flight request finish. If provider credentials are unavailable, use
 `NODE_ENV=development` to exercise `/health` and `/ready`; a real research
 request still requires Anthropic and Tavily access.
 
-For GitHub Actions, configure `GH_PACKAGES_TOKEN` as a repository secret. CI
-maps it to `NODE_AUTH_TOKEN` only for the `npm ci` step. For the opt-in live
-Tavily connectivity check, see
-[`docs/tavily-manual-check.md`](./docs/tavily-manual-check.md).
-
-## Delivery status
-
-Phases 1–7 and the optional framework showcase are complete. The repository’s
-roadmap ends at the non-production service scope; container deployment,
-hosting, and release acceptance are out of scope. See
-[`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
-exit criteria.
+For the opt-in live Tavily connectivity check, see [`docs/tavily-manual-check.md`](./docs/tavily-manual-check.md).
