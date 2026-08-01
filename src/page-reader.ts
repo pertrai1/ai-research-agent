@@ -54,7 +54,7 @@ export type PageReaderTransport = {
 
 export type PageReaderTool = {
   name: 'read_page';
-  execute(input: unknown): Promise<PageReaderResult>;
+  execute(input: unknown, signal?: AbortSignal): Promise<PageReaderResult>;
 };
 
 export type PageReaderResult =
@@ -191,7 +191,7 @@ export function createPageReaderTool({
 }: ToolOptions): PageReaderTool {
   return {
     name: 'read_page',
-    execute: async (input) => {
+    execute: async (input, signal) => {
       const startedAt = now();
       const parsedInput = parsePageReaderInput(input);
       if (!parsedInput.ok) {
@@ -200,7 +200,7 @@ export function createPageReaderTool({
       }
 
       const hostname = new URL(parsedInput.value.url).hostname;
-      const result = await transport.read(parsedInput.value);
+      const result = await transport.read(parsedInput.value, signal);
       emitTelemetry(
         onTelemetry,
         now() - startedAt,

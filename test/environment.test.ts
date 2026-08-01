@@ -15,7 +15,7 @@ describe('loadEnvironment', () => {
       ok: false,
       error: {
         code: 'INVALID_ENVIRONMENT',
-        fields: ['ANTHROPIC_API_KEY', 'TAVILY_API_KEY'],
+        fields: ['ANTHROPIC_API_KEY', 'RESEARCH_API_KEY', 'TAVILY_API_KEY'],
       },
     });
   });
@@ -24,6 +24,7 @@ describe('loadEnvironment', () => {
     expect(
       loadEnvironment({
         ANTHROPIC_API_KEY: '   ',
+        RESEARCH_API_KEY: 'research-secret-value',
         NODE_ENV: 'production',
         TAVILY_API_KEY: 'tavily-secret-value',
       }),
@@ -36,6 +37,7 @@ describe('loadEnvironment', () => {
   it('rejects an invalid port without exposing supplied secret values', () => {
     const result = loadEnvironment({
       ANTHROPIC_API_KEY: 'anthropic-secret-value',
+      RESEARCH_API_KEY: 'research-secret-value',
       TAVILY_API_KEY: 'tavily-secret-value',
       NODE_ENV: 'production',
       PORT: 'not-a-number',

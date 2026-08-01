@@ -26,6 +26,11 @@ registered by the research-agent assembly. `POST /research` returns the
 validated structured brief; `GET /health` is a provider-free liveness check and
 `GET /ready` checks local/configuration readiness.
 
+Production requests use `RESEARCH_API_KEY` with `Authorization: Bearer ...`.
+Research calls are rate- and concurrency-limited, body-bounded, deadline-
+cancelled, and emit privacy-safe correlated telemetry; `/health` remains
+unauthenticated for liveness and `/ready` is authenticated.
+
 Conversation memory is process-local and bounded to the most recent 50
 messages per session by the YAML-declared sliding window. A process restart
 clears this store: an interrupted run starts again from the beginning, and
@@ -124,7 +129,7 @@ Keep that terminal running. In a second terminal, check liveness and readiness:
 
 ```sh
 curl http://localhost:3000/health
-curl http://localhost:3000/ready
+curl -H "Authorization: Bearer $RESEARCH_API_KEY" http://localhost:3000/ready
 ```
 
 Expected responses are:
@@ -138,6 +143,7 @@ Expected responses are:
 
 ```sh
 curl -sS -X POST http://localhost:3000/research \
+  -H "Authorization: Bearer $RESEARCH_API_KEY" \
   -H 'content-type: application/json' \
   -d '{"topic":"How do current battery technologies compare?"}'
 ```

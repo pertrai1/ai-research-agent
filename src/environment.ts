@@ -9,6 +9,7 @@ const environmentSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   PORT: z.coerce.number().int().min(1).max(MAX_PORT).default(DEFAULT_PORT),
+  RESEARCH_API_KEY: z.string().trim().min(1).optional(),
   TAVILY_API_KEY: z.string().trim().min(1).optional(),
 });
 
@@ -16,6 +17,7 @@ export type Environment = {
   environment: 'development' | 'test' | 'production';
   port: number;
   anthropicApiKey?: string;
+  researchApiKey?: string;
   tavilyApiKey?: string;
 };
 
@@ -37,11 +39,18 @@ export function loadEnvironment(
     );
   }
 
-  const { ANTHROPIC_API_KEY, NODE_ENV, PORT, TAVILY_API_KEY } = parsed.data;
+  const {
+    ANTHROPIC_API_KEY,
+    NODE_ENV,
+    PORT,
+    RESEARCH_API_KEY,
+    TAVILY_API_KEY,
+  } = parsed.data;
   const missingProductionSecrets =
     NODE_ENV === 'production'
       ? [
           ...(ANTHROPIC_API_KEY === undefined ? ['ANTHROPIC_API_KEY'] : []),
+          ...(RESEARCH_API_KEY === undefined ? ['RESEARCH_API_KEY'] : []),
           ...(TAVILY_API_KEY === undefined ? ['TAVILY_API_KEY'] : []),
         ]
       : [];
@@ -58,6 +67,9 @@ export function loadEnvironment(
       ...(ANTHROPIC_API_KEY === undefined
         ? {}
         : { anthropicApiKey: ANTHROPIC_API_KEY }),
+      ...(RESEARCH_API_KEY === undefined
+        ? {}
+        : { researchApiKey: RESEARCH_API_KEY }),
       ...(TAVILY_API_KEY === undefined ? {} : { tavilyApiKey: TAVILY_API_KEY }),
     },
   };

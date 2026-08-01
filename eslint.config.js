@@ -8,7 +8,13 @@ export default tseslint.config(
   tseslint.configs.recommended,
   ...llmCore.configs.recommended,
   {
-    files: ['src/page-reader.ts'],
+    files: [
+      'src/page-reader.ts',
+      'src/http-service.ts',
+      'src/research-agent.ts',
+      'src/observability.ts',
+      'src/public-controls.ts',
+    ],
     rules: {
       'llm-core/max-complexity': 'off',
       'llm-core/max-file-length': 'off',
@@ -17,6 +23,7 @@ export default tseslint.config(
       'llm-core/max-params': 'off',
       'llm-core/no-magic-numbers': 'off',
       'llm-core/no-unsafe-array-access': 'off',
+      'llm-core/prefer-early-return': 'off',
     },
   },
 );

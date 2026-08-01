@@ -26,14 +26,16 @@ async function call({
   method,
   path,
   body,
+  headers,
 }: {
   server: ReturnType<typeof createResearchHttpServer>;
   method: string;
   path: string;
   body?: unknown;
+  headers?: Record<string, string>;
 }): Promise<{ status: number; body: unknown }> {
   return await new Promise((resolve) => {
-    const request = new FakeRequest(method, path, body);
+    const request = new FakeRequest(method, path, body, headers);
     const response = new FakeResponse((status, payload) =>
       resolve({ status, body: JSON.parse(payload) }),
     );
@@ -42,12 +44,16 @@ async function call({
 }
 
 class FakeRequest extends EventEmitter {
+  readonly headers: Record<string, string>;
+
   constructor(
     readonly method: string,
     readonly url: string,
     private readonly body?: unknown,
+    headers: Record<string, string> = {},
   ) {
     super();
+    this.headers = headers;
   }
 
   async *[Symbol.asyncIterator](): AsyncGenerator<Buffer> {
@@ -58,6 +64,7 @@ class FakeRequest extends EventEmitter {
 class FakeResponse extends EventEmitter {
   headersSent = false;
   statusCode = 0;
+  headers: Record<string, string | number> = {};
 
   constructor(
     private readonly finish: (status: number, payload: string) => void,
@@ -65,8 +72,12 @@ class FakeResponse extends EventEmitter {
     super();
   }
 
-  writeHead(status: number): this {
+  writeHead(
+    status: number,
+    headers: Record<string, string | number> = {},
+  ): this {
     this.statusCode = status;
+    this.headers = headers;
     this.headersSent = true;
     return this;
   }
@@ -236,4 +247,166 @@ describe('research HTTP service', () => {
     await shutdown;
     expect(shutdownFinished).toBe(true);
   });
+
+  it('rejects unauthenticated public requests and keeps health public', async () => {
+    let calls = 0;
+    const server = createResearchHttpServer({
+      apiKey: 'api-secret',
+      executor: async () => {
+        calls += 1;
+        return { ok: true, value: response };
+      },
+    });
+
+    const research = await call({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'topic' },
+    });
+    const health = await call({ server, method: 'GET', path: '/health' });
+    await shutdownResearchHttpServer(server);
+
+    expect(research).toEqual({
+      status: 401,
+      body: {
+        error: {
+          code: 'AUTHENTICATION_FAILED',
+          message: 'Authentication is required or invalid.',
+        },
+      },
+    });
+    expect(health).toEqual({ status: 200, body: { status: 'ok' } });
+    expect(calls).toBe(0);
+  });
+
+  it('enforces rate and concurrency controls for an authenticated client', async () => {
+    let releaseRun!: () => void;
+    let started!: () => void;
+    const runStarted = new Promise<void>((resolve) => (started = resolve));
+    const runReleased = new Promise<void>((resolve) => (releaseRun = resolve));
+    const server = createResearchHttpServer({
+      apiKey: 'api-secret',
+      maxConcurrent: 1,
+      rateLimit: { maxRequests: 10, windowMs: 1_000_000 },
+      executor: async ({ topic, sessionId }) => {
+        started();
+        await runReleased;
+        return { ok: true, value: { ...response, topic, sessionId } };
+      },
+    });
+    const headers = { authorization: 'Bearer api-secret' };
+    const first = call({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'first' },
+      headers,
+    });
+    await runStarted;
+    const busy = await call({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'second' },
+      headers,
+    });
+    releaseRun();
+    await first;
+    await shutdownResearchHttpServer(server);
+
+    expect(busy).toEqual({
+      status: 503,
+      body: {
+        error: {
+          code: 'SERVICE_BUSY',
+          message: 'The service is busy. Please try again later.',
+        },
+      },
+    });
+  });
+
+  it('enforces per-client rate limits and emits security headers', async () => {
+    const server = createResearchHttpServer({
+      apiKey: 'api-secret',
+      rateLimit: { maxRequests: 1, windowMs: 1_000_000 },
+      executor: async ({ topic, sessionId }) => ({
+        ok: true,
+        value: { ...response, topic, sessionId },
+      }),
+    });
+    const first = await callWithHeaders({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'first' },
+      headers: { authorization: 'Bearer api-secret' },
+    });
+    const second = await callWithHeaders({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'second' },
+      headers: { authorization: 'Bearer api-secret' },
+    });
+    await shutdownResearchHttpServer(server);
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(429);
+    expect(first.headers['x-content-type-options']).toBe('nosniff');
+    expect(first.headers['content-security-policy']).toBe("default-src 'none'");
+  });
+
+  it('returns a stable timeout and aborts the request signal', async () => {
+    let aborted = false;
+    const server = createResearchHttpServer({
+      requestTimeoutMs: 5,
+      executor: async (_request, context) => {
+        context?.signal.addEventListener('abort', () => (aborted = true));
+        await new Promise<void>(() => undefined);
+        return { ok: true, value: response };
+      },
+    });
+
+    const result = await call({
+      server,
+      method: 'POST',
+      path: '/research',
+      body: { topic: 'slow' },
+    });
+    await shutdownResearchHttpServer(server);
+
+    expect(result).toEqual({
+      status: 503,
+      body: {
+        error: { code: 'TIMEOUT', message: 'The research request timed out.' },
+      },
+    });
+    expect(aborted).toBe(true);
+  });
 });
+
+async function callWithHeaders(args: {
+  server: ReturnType<typeof createResearchHttpServer>;
+  method: string;
+  path: string;
+  body?: unknown;
+  headers?: Record<string, string>;
+}): Promise<{
+  status: number;
+  body: unknown;
+  headers: Record<string, string | number>;
+}> {
+  return await new Promise((resolve) => {
+    const request = new FakeRequest(
+      args.method,
+      args.path,
+      args.body,
+      args.headers,
+    );
+    const response = new FakeResponse((status, payload) =>
+      resolve({ status, body: JSON.parse(payload), headers: response.headers }),
+    );
+    args.server.emit('request', request, response);
+  });
+}

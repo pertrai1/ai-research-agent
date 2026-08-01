@@ -232,16 +232,22 @@ The default deterministic suite does not bind a socket or call Anthropic/Tavily.
 
 ### Tasks
 
-- [ ] 7.1 Add failing API-control tests for authentication, per-client rate limits, request-body limits, concurrency/backpressure, security headers, and explicit CORS behavior.
-- [ ] 7.2 Implement the public API controls needed to pass those tests and derive client identity from validated authentication rather than arbitrary session IDs.
-- [ ] 7.3 Add failing CostGuard tests for per-`run()` `maxCostPerRequest`, `onExceeded: error`, overshoot-aware configuration, and no false claim that agent-instance `maxCostPerSession` is a conversation quota.
-- [ ] 7.4 Declare budget policy in agent YAML and verify factory-composed CostGuard hooks stop further model activity at the documented boundary.
-- [ ] 7.5 Add failing reliability tests for total request deadlines, retryable-only provider backoff, tool timeouts, bounded outputs, iteration exhaustion, and client-disconnect cancellation.
-- [ ] 7.6 Implement deadline/cancellation propagation and bounded retry policies without a broad duplicate-cost retry around the full agent run.
-- [ ] 7.7 Add failing observability tests for run, agent, tool, provider, guardrail, budget, timeout, validation, and overall-request events with correlation IDs and privacy-safe session identifiers.
-- [ ] 7.8 Implement structured logs, CG AgentFlow tracing, and metrics for rates, latency, failures, iteration exhaustion, token usage, and estimated cost.
-- [ ] 7.9 Add redaction tests for prompts, retrieved pages, keys, headers, errors, and traces, then centralize sanitization until all leak tests pass.
-- [ ] 7.10 Refactor middleware and lifecycle composition while API-control, reliability, and observability suites remain green.
+- [x] 7.1 Add failing API-control tests for authentication, per-client rate limits, request-body limits, concurrency/backpressure, security headers, and explicit CORS behavior.
+- [x] 7.2 Implement the public API controls needed to pass those tests and derive client identity from validated authentication rather than arbitrary session IDs.
+- [x] 7.3 Add failing CostGuard tests for per-`run()` `maxCostPerRequest`, `onExceeded: error`, overshoot-aware configuration, and no false claim that agent-instance `maxCostPerSession` is a conversation quota.
+- [x] 7.4 Declare budget policy in agent YAML and verify factory-composed CostGuard hooks stop further model activity at the documented boundary.
+- [x] 7.5 Add failing reliability tests for total request deadlines, retryable-only provider backoff, tool timeouts, bounded outputs, iteration exhaustion, and client-disconnect cancellation.
+- [x] 7.6 Implement deadline/cancellation propagation and bounded retry policies without a broad duplicate-cost retry around the full agent run.
+- [x] 7.7 Add failing observability tests for run, agent, tool, provider, guardrail, budget, timeout, validation, and overall-request events with correlation IDs and privacy-safe session identifiers.
+- [x] 7.8 Implement structured logs, CG AgentFlow tracing, and metrics for rates, latency, failures, iteration exhaustion, token usage, and estimated cost.
+- [x] 7.9 Add redaction tests for prompts, retrieved pages, keys, headers, errors, and traces, then centralize sanitization until all leak tests pass.
+- [x] 7.10 Refactor middleware and lifecycle composition while API-control, reliability, and observability suites remain green.
+
+**Status:** Complete on 2026-08-01. Verified with 56 deterministic tests,
+strict OpenSpec validation, authenticated API-control coverage, per-run
+CostGuard enforcement, request deadline/cancellation coverage, sanitized
+AgentFlow lifecycle telemetry, metrics, formatting, linting, type checking, and
+a production build. No live provider calls are made by the default suite.
 
 ### Exit criteria
 

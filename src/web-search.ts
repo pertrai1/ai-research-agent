@@ -21,7 +21,10 @@ export type SearchTelemetryEvent = {
 };
 
 export type TavilyTransport = {
-  search(input: SearchInput): Promise<TavilyTransportResult>;
+  search(
+    input: SearchInput,
+    signal?: AbortSignal,
+  ): Promise<TavilyTransportResult>;
 };
 
 type TavilyTransportResult =
@@ -51,7 +54,7 @@ type WebSearchToolOptions = {
 
 export type WebSearchTool = {
   name: 'web_search';
-  execute(input: unknown): Promise<WebSearchResult>;
+  execute(input: unknown, signal?: AbortSignal): Promise<WebSearchResult>;
 };
 
 export type WebSearchResult =
@@ -73,7 +76,7 @@ export function createTavilyTransport({
   const perAttemptTimeout = Math.max(1, Math.floor(timeoutMs));
 
   return {
-    async search(input): Promise<TavilyTransportResult> {
+    async search(input, signal): Promise<TavilyTransportResult> {
       for (let attempt = 0; attempt < attempts; attempt += 1) {
         const response = await fetchAttempt({
           apiKey,
@@ -81,6 +84,7 @@ export function createTavilyTransport({
           input,
           scheduleTimeout,
           timeoutMs: perAttemptTimeout,
+          ...(signal === undefined ? {} : { callerSignal: signal }),
         });
 
         if (response.ok) {
@@ -106,8 +110,14 @@ export function createWebSearchTool({
 }: WebSearchToolOptions): WebSearchTool {
   return {
     name: 'web_search',
-    execute: (input) =>
-      executeWebSearch({ input, now, onTelemetry, transport }),
+    execute: (input, signal) =>
+      executeWebSearch({
+        input,
+        now,
+        onTelemetry,
+        transport,
+        ...(signal === undefined ? {} : { signal }),
+      }),
   };
 }
 
@@ -116,11 +126,13 @@ async function executeWebSearch({
   now,
   onTelemetry,
   transport,
+  signal,
 }: {
   input: unknown;
   now: () => number;
   onTelemetry: ((event: SearchTelemetryEvent) => void) | undefined;
   transport: TavilyTransport;
+  signal?: AbortSignal;
 }): Promise<WebSearchResult> {
   const startedAt = now();
   const parsedInput = parseSearchInput(input);
@@ -131,7 +143,7 @@ async function executeWebSearch({
   }
 
   try {
-    const providerResult = await transport.search(parsedInput.value);
+    const providerResult = await transport.search(parsedInput.value, signal);
     if (!providerResult.ok) {
       emitFailureTelemetry({ onTelemetry, now, startedAt });
       return providerResult;
@@ -162,14 +174,18 @@ async function fetchAttempt({
   input,
   scheduleTimeout,
   timeoutMs,
+  callerSignal,
 }: {
   apiKey: string;
   fetch: FetchFunction;
   input: SearchInput;
   scheduleTimeout: TimeoutScheduler;
   timeoutMs: number;
+  callerSignal?: AbortSignal;
 }): Promise<TavilyTransportResult & { retryable?: boolean }> {
   const controller = new AbortController();
+  const abort = (): void => controller.abort();
+  callerSignal?.addEventListener('abort', abort, { once: true });
   const timeout = scheduleTimeout(() => controller.abort(), timeoutMs);
 
   try {
@@ -202,6 +218,7 @@ async function fetchAttempt({
     return { ...providerFailure(), retryable: true };
   } finally {
     timeout.cancel();
+    callerSignal?.removeEventListener('abort', abort);
   }
 }
 

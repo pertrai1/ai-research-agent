@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import type { Response } from '@cadmusgroup-llc/cg-agent-flow-llm';
+import { CostGuard } from '@cadmusgroup-llc/cg-agent-flow-core';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -64,6 +65,33 @@ function fakeFinish(content: string) {
 }
 
 describe('Phase 5 research agent', () => {
+  it('enforces a per-run CostGuard budget and resets it for the next run', async () => {
+    const guard = new CostGuard({
+      maxCostPerRequest: 0.5,
+      warningThresholdPercent: 80,
+      onExceeded: 'error',
+    });
+    const modelContext = {
+      agentName: 'research-agent',
+      messages: [],
+      modelConfig: {},
+      callIndex: 0,
+      timestamp: 0,
+    };
+    guard.afterModelCall({
+      ...modelContext,
+      response: { ...response('answer'), cost: 0.6 },
+      duration: 1,
+    });
+
+    await expect(guard.beforeModelCall(modelContext)).rejects.toThrow(
+      'exceeds request limit',
+    );
+    guard.resetRequestCost();
+    await expect(guard.beforeModelCall(modelContext)).resolves.toBeUndefined();
+    expect(guard.getSessionCost()).toBe(0.6);
+  });
+
   it('loads bounded YAML configuration with exactly the approved tools', () => {
     const result = validateResearchAgentSpec();
 
@@ -77,6 +105,8 @@ describe('Phase 5 research agent', () => {
         maxTokens: 1500,
         maxIterations: 15,
         maxObservationLength: 12000,
+        maxCostPerRequest: 0.5,
+        onExceeded: 'error',
         tools: ['web_search', 'read_page'],
       },
     });

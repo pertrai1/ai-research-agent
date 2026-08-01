@@ -8,7 +8,11 @@ import {
   type AgentResult,
   type LifecycleHooks,
 } from '@cadmusgroup-llc/cg-agent-flow-core';
-import { parseResearchResponse, type ResearchResponse } from './contracts.js';
+import {
+  parseResearchResponse,
+  type ContractResult,
+  type ResearchResponse,
+} from './contracts.js';
 import {
   createResearchToolResolver,
   trackDependencies,
@@ -25,6 +29,7 @@ const MAX_TOKENS = 1500;
 const MAX_OBSERVATION_LENGTH = 12000;
 const DEFAULT_TEMPERATURE = 0.2;
 const DEFAULT_MEMORY_MAX_MESSAGES = 50;
+const MAX_COST_PER_REQUEST = 0.5;
 type ReactAgentSpec = Extract<ReturnType<typeof loadSpec>, { type: 'react' }>;
 
 export type ResearchAgentDependencies = {
@@ -40,6 +45,8 @@ export type ResearchAgentSpecSummary = {
   maxTokens: 1500;
   maxIterations: 15;
   maxObservationLength: 12000;
+  maxCostPerRequest: 0.5;
+  onExceeded: 'error';
   tools: ['web_search', 'read_page'];
 };
 
@@ -56,7 +63,13 @@ export type ResearchRunResult =
     }
   | {
       ok: false;
-      error: { code: 'INVALID_AGENT_OUTPUT' | 'LLM_PROVIDER_FAILURE' };
+      error: {
+        code:
+          | 'INVALID_AGENT_OUTPUT'
+          | 'LLM_PROVIDER_FAILURE'
+          | 'BUDGET_EXHAUSTED'
+          | 'TIMEOUT';
+      };
     };
 
 export function validateResearchAgentSpec(
@@ -70,6 +83,7 @@ export function validateResearchAgentSpec(
     const config = spec.config;
     if (
       !hasExpectedAgentConfig(config) ||
+      !hasExpectedBudgetConfig(spec.budget) ||
       !hasExpectedMemoryConfig(spec.memory)
     ) {
       return { ok: false, error: { code: 'INVALID_AGENT_CONFIG' } };
@@ -84,12 +98,22 @@ export function validateResearchAgentSpec(
         maxTokens: MAX_TOKENS,
         maxIterations: MAX_ITERATIONS,
         maxObservationLength: MAX_OBSERVATION_LENGTH,
+        maxCostPerRequest: MAX_COST_PER_REQUEST,
+        onExceeded: 'error',
         tools: [...APPROVED_TOOLS],
       },
     };
   } catch {
     return { ok: false, error: { code: 'INVALID_AGENT_CONFIG' } };
   }
+}
+
+function hasExpectedBudgetConfig(budget: ReactAgentSpec['budget']): boolean {
+  return (
+    budget?.maxCostPerRequest === MAX_COST_PER_REQUEST &&
+    budget.onExceeded === 'error' &&
+    budget.maxCostPerSession === undefined
+  );
 }
 
 function hasExpectedAgentConfig(config: ReactAgentSpec['config']): boolean {
@@ -144,6 +168,7 @@ export async function runResearchAgent({
   topic,
   sessionId = randomUUID(),
   runId = randomUUID(),
+  signal,
   hooks,
 }: {
   dependencies: ResearchAgentDependencies;
@@ -151,22 +176,44 @@ export async function runResearchAgent({
   topic: string;
   sessionId?: string;
   runId?: string;
+  signal?: AbortSignal;
   hooks?: Partial<LifecycleHooks>;
 }): Promise<ResearchRunResult> {
   const observedUrls = new Set<string>();
+  const runDependencies =
+    signal === undefined
+      ? dependencies
+      : {
+          webSearch: {
+            name: 'web_search' as const,
+            execute: (input: unknown) =>
+              dependencies.webSearch.execute(input, signal),
+          },
+          readPage: {
+            name: 'read_page' as const,
+            execute: (input: unknown) =>
+              dependencies.readPage.execute(input, signal),
+          },
+        };
   const agent = createResearchAgent({
-    dependencies: trackDependencies(dependencies, observedUrls),
+    dependencies: trackDependencies(runDependencies, observedUrls),
     specPath,
-    ...(hooks === undefined ? {} : { hooks }),
+    hooks: {
+      ...(hooks ?? {}),
+      ...(signal === undefined ? {} : cancellationHooks(signal)),
+    },
   });
   const prompt = researchPrompt({ topic, sessionId, runId });
 
-  let agentResult = await agent.run(prompt, { sessionId });
+  let agentResult = await agent.run(prompt, {
+    sessionId,
+    ...(signal === undefined ? {} : { signal }),
+  });
   let parsed = parseGroundedAnswer(agentResult, observedUrls);
-  if (!parsed.ok) {
+  if (!parsed.ok && parsed.error.code === 'INVALID_AGENT_OUTPUT') {
     agentResult = await agent.run(
       `${prompt}\n\nYour previous output was invalid. Return corrected JSON only. Do not add sources not observed through tools.`,
-      { sessionId },
+      { sessionId, ...(signal === undefined ? {} : { signal }) },
     );
     parsed = parseGroundedAnswer(agentResult, observedUrls);
   }
@@ -184,9 +231,27 @@ export async function runResearchAgent({
 function parseGroundedAnswer(
   result: AgentResult,
   observedUrls: Set<string>,
-): ReturnType<typeof parseResearchResponse> {
-  if (!result.success)
-    return { ok: false, error: { code: 'INVALID_AGENT_OUTPUT' } };
+): ContractResult<
+  ResearchResponse,
+  | 'INVALID_AGENT_OUTPUT'
+  | 'LLM_PROVIDER_FAILURE'
+  | 'BUDGET_EXHAUSTED'
+  | 'TIMEOUT'
+> {
+  if (!result.success) {
+    const name = result.error?.name;
+    return {
+      ok: false,
+      error: {
+        code:
+          name === 'BudgetExceededError'
+            ? 'BUDGET_EXHAUSTED'
+            : name === 'AbortError'
+              ? 'TIMEOUT'
+              : 'LLM_PROVIDER_FAILURE',
+      },
+    };
+  }
   let candidate: unknown;
   try {
     candidate = JSON.parse(result.answer) as unknown;
@@ -201,6 +266,21 @@ function parseGroundedAnswer(
     return { ok: false, error: { code: 'INVALID_AGENT_OUTPUT' } };
   }
   return parsed;
+}
+
+function cancellationHooks(signal: AbortSignal): Partial<LifecycleHooks> {
+  const throwIfAborted = (): void => {
+    if (signal.aborted) {
+      const error = new Error('research request cancelled');
+      error.name = 'AbortError';
+      throw error;
+    }
+  };
+  return {
+    beforeRun: throwIfAborted,
+    beforeModelCall: throwIfAborted,
+    beforeToolCall: throwIfAborted,
+  };
 }
 
 function sameTools(

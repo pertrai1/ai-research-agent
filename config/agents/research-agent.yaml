@@ -28,6 +28,10 @@ config:
   tools:
     - web_search
     - read_page
+budget:
+  maxCostPerRequest: 0.5
+  warningThresholdPercent: 80
+  onExceeded: error
 memory:
   type: conversation
   strategy: sliding-window

@@ -2,6 +2,8 @@ export const errorCategories = [
   'INVALID_REQUEST',
   'AUTHENTICATION_FAILED',
   'RATE_LIMITED',
+  'SERVICE_BUSY',
+  'TIMEOUT',
   'SEARCH_PROVIDER_FAILURE',
   'PAGE_RETRIEVAL_REJECTED',
   'PAGE_RETRIEVAL_FAILURE',
@@ -46,6 +48,14 @@ const publicErrorDefinitions: Record<
   RATE_LIMITED: {
     status: HTTP_TOO_MANY_REQUESTS,
     message: 'Too many requests.',
+  },
+  SERVICE_BUSY: {
+    status: HTTP_SERVICE_UNAVAILABLE,
+    message: 'The service is busy. Please try again later.',
+  },
+  TIMEOUT: {
+    status: HTTP_SERVICE_UNAVAILABLE,
+    message: 'The research request timed out.',
   },
   SEARCH_PROVIDER_FAILURE: {
     status: HTTP_BAD_GATEWAY,
