@@ -35,6 +35,12 @@ All application, test, infrastructure, and deployment tasks below begin unchecke
 
 **Requirements:** §4.1, §4.2, SEC-4, §10.1, §11, §15.
 
+**Status:** Complete in commit `2744504` (2026-08-01). Verified on Node.js
+24.14.0 with a clean `npm ci` using an authorized GitHub Packages token, then
+typecheck, lint, formatting check, unit tests, production build, local startup,
+invalid-production-environment handling, strict OpenSpec validation, and a
+literal-secret scan.
+
 ### Tasks
 
 - [x] 1.1 Pin Node.js 24 and npm 9+ expectations and create TypeScript 7 build, prettier/eslint/eslint-plugin-llm-core lint and formatting, vitest test, and start commands that succeed on a minimal service entry point.

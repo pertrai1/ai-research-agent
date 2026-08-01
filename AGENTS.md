@@ -15,23 +15,42 @@ This project is a deployable, read-only autonomous research agent built with the
 ## What
 
 - **Runtime:** TypeScript on Node.js 24, npm 9+.
-- **Agent framework:** CG AgentFlow (`@cadmusgroup-llc/cg-agent-flow-core/-llm/-tools/-agents/-guardrails/-memory/-observability/-evaluation`), distributed via GitHub Packages (`https://npm.pkg.github.com`, scope `@cadmusgroup-llc`) — never commit a literal token; local `.npmrc` with credentials must be git-ignored.
+- **Agent framework:** CG AgentFlow `0.17.1` (`@cadmusgroup-llc/cg-agent-flow-core/-llm/-tools/-agents/-guardrails/-memory/-observability/-evaluation`), distributed via GitHub Packages (`https://npm.pkg.github.com`, scope `@cadmusgroup-llc`). The tracked `.npmrc` is token-free and reads only `${NODE_AUTH_TOKEN}`; never commit a literal token or a credential-bearing local configuration.
 - **Agent type:** `ReActAgent` created from a validated YAML spec via `createAgentFromFile`. The YAML is the source of truth for declarative behavior (provider, model, temperature `0.2`, max 1500 output tokens, max 15 iterations, memory, CostGuard); app code is limited to tool construction, dependency resolution, API wiring, and controls the spec can't express.
 - **LLM provider:** Anthropic (model configurable). **Search provider:** Tavily (`TAVILY_API_KEY`).
 - **Validation:** Zod at every external-data boundary (API request/response, tool I/O, provider payloads, model output) — no TypeScript-assertion-based acceptance of untrusted data.
 - **Tools registered:** exactly `web_search` and `read_page`. No file-write, code-exec, shell, email, or publishing tools. This is a hard read-only boundary (SEC-1); any future side-effecting tool requires human-in-the-loop approval.
-- **Repo state:** greenfield — `package.json` is currently a stub with no real build/test/lint yet. Phase 1 of `ROADMAP.md` establishes those.
+- **Phase 1 status:** complete in commit `2744504`. The next incomplete roadmap work is Phase 2; do not begin a later phase until its dependencies and Phase 2 exit criteria are met.
+- **Current implementation:** `src/environment.ts` contains the Zod-backed environment loader; `src/index.ts` is the minimal compiled startup entry point; `test/environment.test.ts` covers configuration defaults, production-required secrets, malformed values, and redaction. No HTTP API, provider integration, or agent assembly exists yet.
 
 ## Commands
 
-Not yet established — Phase 1 of `ROADMAP.md` (tasks 1.1–1.7) defines TypeScript build, vitest test, eslint/prettier lint/format, and CI commands. Until that phase lands, do not assume a command exists; check `package.json` scripts directly. Update this table as soon as Phase 1 commands exist.
+Phase 1 establishes the following commands. They require Node.js 24 and, for
+`npm ci`, an authorized GitHub Packages token supplied through
+`NODE_AUTH_TOKEN`. CI maps the repository secret `GH_PACKAGES_TOKEN` to that
+variable only for installation.
 
 | Command | Purpose |
 | ------- | ------- |
-| _(pending Phase 1)_ | build |
-| _(pending Phase 1)_ | test (vitest) |
-| _(pending Phase 1)_ | lint (eslint + eslint-plugin-llm-core) |
-| _(pending Phase 1)_ | format (prettier) |
+| `npm ci` | install exact lockfile dependencies; requires `NODE_AUTH_TOKEN` for CG AgentFlow packages |
+| `npm run typecheck` | TypeScript validation without emitting files |
+| `npm run lint` | ESLint with `eslint-plugin-llm-core` recommended rules |
+| `npm run format:check` | Prettier formatting validation |
+| `npm test` | deterministic Vitest unit tests |
+| `npm run build` | compile `src/` to `dist/` |
+| `npm start` | run `dist/index.js` |
+
+## Phase 1 Details
+
+- Direct dependencies are pinned exactly in `package.json`; all CG AgentFlow
+  packages currently use `0.17.1`.
+- `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` are optional during local Phase 1
+  startup and required when `NODE_ENV=production`. Validation errors expose only
+  invalid field names, never supplied values.
+- Context7 does not provide documentation for the private CG AgentFlow package
+  family. Phase 5 MUST add an integration test for the installed
+  `createAgentFromFile` API; do not infer the factory API from similarly named
+  public packages.
 
 ## Project-Specific Guardrails
 
