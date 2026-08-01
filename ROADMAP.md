@@ -254,6 +254,39 @@ a production build. No live provider calls are made by the default suite.
 - Tests demonstrate hard iteration/token/tool-output controls, request budget enforcement, total deadlines, bounded retries, and cancellation.
 - Required logs, traces, and metrics are emitted with correlation while secret and sensitive-content leak tests pass.
 
+## Optional framework showcase work
+
+These tracks are intentionally not numbered phases and are not required to
+complete the current non-production service scope. They exist to demonstrate
+more of CG AgentFlow without replacing project-specific safety and service
+controls.
+
+Recommended order:
+
+1. **Guardrails:** Add a YAML-backed `guardrailResolver` and demonstrate the
+   framework's deterministic `PromptInjectionGuardrail`,
+   `SecretsRedactionGuardrail`, and `OutputValidationGuardrail`. Use input
+   prompt checks and output defense-in-depth, while keeping retrieved-content
+   delimiting, source grounding, and citation validation in application code.
+2. **Observability demo profile:** Enable CG AgentFlow tracing in a dedicated
+   local/demo configuration, preferably with a sanitized exporter or explicit
+   redaction review. Keep the project's request correlation, privacy-safe
+   telemetry, and metrics as the service-level observability layer; built-in
+   tracing must not become a path for prompts, URLs, or retrieved content to
+   leak.
+3. **Evaluation harness:** Use the framework's datasets, `EvalRunner`, ReAct
+   reasoning evaluator, tool-selection evaluator, answer evaluator, reports,
+   and regression detection in a test-only harness. Add project-specific
+   evaluators for observed-URL grounding, the 500-word limit, uncertainty, and
+   prompt-injection containment. Keep live-provider evaluation opt-in.
+
+The framework `Tool` abstraction and `ConversationMemory` are already used.
+Framework `InMemoryStore` could replace `LocalMemoryStore`, but that would
+remove little code and would weaken the project's explicit single-process
+store boundary, so it is not a priority. Framework tool retries should remain
+disabled unless their cost and cancellation behavior are proven for each
+provider-backed retrieval tool.
+
 ## Requirement coverage matrix
 
 | Requirement                          | Primary phase(s) |
