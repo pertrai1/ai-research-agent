@@ -1,98 +1,118 @@
 # AI Research Agent
 
-Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
-injected, bounded `web_search` and `read_page` capabilities with validated
-results, SSRF-resistant URL handling, timeout and retry controls, bounded text
-extraction, untrusted-content delimiters, and privacy-safe telemetry. Phase 5
-assembles those capabilities into a YAML-defined CG AgentFlow ReAct agent with
-source grounding; Phase 6 adds a session-scoped in-memory window and HTTP service.
+## Application overview
 
-## Implemented capabilities
+This project is a read-only autonomous web research service. A caller submits
+a topic over HTTP, and the agent searches the public web with Tavily, reads
+selected pages, and returns a concise source-grounded brief of at most 500
+words.
 
-`web_search` sends bounded Tavily searches using the runtime API key, returns at
-most five normalized results, retries only transient failures, and never places
-credentials in tool output or telemetry.
+The service has two approved agent tools: `web_search` and `read_page`.
+Searches are bounded and normalized. Page reads are limited to public HTTP(S)
+destinations, defend against SSRF across redirects, and return bounded text
+with retrieved content clearly marked as untrusted evidence. A source is
+accepted only if its URL was actually returned by a tool during that run.
 
-`read_page` accepts one credential-free public HTTP(S) URL. It resolves and
-classifies destinations, rejects private and reserved IPv4/IPv6 networks and
-cloud metadata addresses, revalidates every redirect, and enforces redirect,
-timeout, cancellation, and response-size limits. Supported HTML and text
-responses are reduced to bounded readable text; scripts, styles, and raw markup
-are removed. Retrieved text is explicitly marked as untrusted evidence, so
-page instructions are not treated as agent instructions.
+The HTTP boundary adds bearer-key authentication, request-size limits,
+per-client rate limits, concurrency limits, deadlines, cancellation,
+session-scoped in-memory conversation history, sanitized telemetry, and
+graceful shutdown. `GET /health` is a provider-free liveness check; `GET
+/ready` checks authenticated service readiness; `POST /research` runs a
+research request.
 
-Both capabilities are library-level tools with injected transports and are
-registered by the research-agent assembly. `POST /research` returns the
-validated structured brief; `GET /health` is a provider-free liveness check and
-`GET /ready` checks local/configuration readiness.
+## What CG AgentFlow contributes
 
-Production requests use `RESEARCH_API_KEY` with `Authorization: Bearer ...`.
-Research calls are rate- and concurrency-limited, body-bounded, deadline-
-cancelled, and emit privacy-safe correlated telemetry; `/health` remains
-unauthenticated for liveness and `/ready` is authenticated.
+CG AgentFlow supplies the agent runtime and the declarative integration layer.
+The application keeps research-specific concerns—Tavily and page retrieval,
+SSRF policy, source grounding, public controls, and privacy-safe service
+telemetry—in its own code. AgentFlow handles the general agent concerns around
+those boundaries.
 
-The agent also enforces the YAML-declared per-run CostGuard budget and emits
-bounded request, agent, provider, and tool metrics without retaining prompts,
-retrieved pages, credentials, headers, or raw provider errors. CORS is disabled
-unless an explicit origin allow-list is configured.
+### Package-by-package use
 
-Conversation memory is process-local and bounded to the most recent 50
-messages per session by the YAML-declared sliding window. A process restart
-clears this store: an interrupted run starts again from the beginning, and
-exact mid-run checkpoint recovery is not provided in the initial service.
+All CG AgentFlow packages are pinned to `0.17.1` and are installed from the
+authorized GitHub Packages registry.
 
-## Research agent
+| Package                       | How this project uses it                                                                              | Contribution                                                                                                                                                                 |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cg-agent-flow-agents`        | `createAgentFromFile` creates the ReAct agent from YAML.                                              | Keeps agent assembly on the framework-supported factory path and makes the YAML spec the source of truth for provider, model, limits, tools, memory, and budget.             |
+| `cg-agent-flow-core`          | `BaseAgent`, `loadSpec`, lifecycle hooks, `AgentResult`, and `CostGuard`.                             | Provides the agent contract, spec loading, lifecycle integration, normalized run results, and per-request cost enforcement.                                                  |
+| `cg-agent-flow-tools`         | The two retrieval adapters are framework `Tool` instances.                                            | Gives `web_search` and `read_page` a common tool shape while the application injects transports and enforces the hard read-only allow-list.                                  |
+| `cg-agent-flow-memory`        | Conversation memory hooks, `LocalMemoryStore`, and memory-entry validation.                           | Connects the YAML sliding-window policy to session-scoped follow-up requests. The store is intentionally process-local and is not durable.                                   |
+| `cg-agent-flow-llm`           | Provider response/message types at the integration boundary.                                          | Provides the framework’s LLM-facing contracts without making provider calls part of the deterministic default tests.                                                         |
+| `cg-agent-flow-guardrails`    | Used by the optional showcase for prompt-injection blocking, secret redaction, and output validation. | Demonstrates reusable framework guardrails and direction-safe resolution; production keeps its existing application-level validation and security controls authoritative.    |
+| `cg-agent-flow-observability` | Used by the optional showcase for lifecycle tracing hooks and an in-memory tracer.                    | Demonstrates framework tracing with an exporter that retains only bounded, allow-listed metadata. Production telemetry remains in the application’s sanitized metrics path.  |
+| `cg-agent-flow-evaluation`    | Used by the optional showcase evaluation harness.                                                     | Adds framework reasoning, tool-selection, and answer evaluators, plus project-specific grounding, length, uncertainty, and prompt-injection checks and regression detection. |
 
-The agent specification is [`config/agents/research-agent.yaml`](./config/agents/research-agent.yaml).
-It declares a ReAct agent using Anthropic, temperature `0.2`, a 1,500-token
-output limit, at most 15 iterations, bounded observations, and exactly
-`web_search` plus `read_page`. Runtime code supplies the injected tool
-implementations and calls CG AgentFlow's `createAgentFromFile` factory.
+### Benefits in this application
 
-Each run records URLs returned by successful tool calls. A final source is
-accepted only when its URL appears in that run's observed-URL ledger. Invalid
-structured output receives one repair attempt before returning the typed
-`INVALID_AGENT_OUTPUT` failure. Retrieved page text remains explicitly
-untrusted evidence and is never treated as instructions.
+AgentFlow improved the application in several concrete ways:
+
+- YAML makes the agent’s model, temperature, token and iteration limits,
+  observation bound, memory strategy, tool allow-list, and `CostGuard` policy
+  visible and reviewable without duplicating them in application code.
+- The factory and lifecycle hooks provide a narrow integration point for
+  injected tools, cancellation, memory, deterministic test controls, and
+  optional instrumentation.
+- The common tool and agent contracts make the retrieval adapters replaceable
+  without changing the HTTP service boundary.
+- The guardrail and evaluation packages provide a path to framework-native
+  safety and regression checks, while the showcase proves they can be used
+  offline with deterministic inputs.
+
+### Limitations and workarounds
+
+The integration is useful, but it is not a complete replacement for the
+application’s own controls:
+
+- `createAgentFromFile` in `cg-agent-flow-agents@0.17.1` accepts a tool
+  resolver but does not accept an injected provider or provider factory. The
+  framework constructs the provider internally. As a result, complete factory
+  integration tests cannot use a direct fake provider; deterministic tests use
+  lifecycle hooks to inject model responses. This is recorded as an open
+  finding in [`docs/agent-flow-findings.md`](./docs/agent-flow-findings.md).
+- `createTracingHooks()` in
+  `cg-agent-flow-observability@0.17.1` has a TypeScript type mismatch with the
+  core package’s `LifecycleHooks` under this repository’s strict compiler
+  settings. The showcase keeps the inferred tracing-hook type at the adapter
+  boundary rather than widening production types. This is also recorded in
+  the findings log.
+- Framework guardrails, tracing, and evaluation are showcase capabilities, not
+  silently enabled production behavior. They do not replace application-level
+  source grounding, citation validation, secret redaction, SSRF protection,
+  service authentication, or sanitized telemetry.
+- Framework memory is process-local here. Restarting the service clears the
+  conversation window, and exact mid-run checkpoint recovery is not provided.
+- The private CG AgentFlow package family is not documented by Context7. The
+  installed `createAgentFromFile` API is therefore covered by a deterministic
+  integration test and should not be inferred from similarly named public
+  packages.
 
 ### Optional framework showcase
 
-The optional showcase demonstrates three CG AgentFlow capabilities without
-changing the production service:
-
-- deterministic YAML-backed prompt-injection, secret-redaction, and output-
-  validation guardrails;
-- an opt-in in-memory tracing profile that records only bounded, allow-listed
-  span metadata; and
-- a deterministic evaluation harness using fake agents, framework evaluators,
-  project-specific grounding checks, and regression detection.
-
-Run the showcase offline with:
+The showcase uses a separate YAML spec and does not alter the production
+agent. It demonstrates guardrails, opt-in tracing, and deterministic
+evaluation:
 
 ```sh
 npx vitest run test/framework-showcase.test.ts
 ```
 
-The showcase agent uses the same two read-only tools as production, while the
-production agent remains on its existing configuration. No live provider,
-network exporter, HTTP route, framework retry, or persistent report is enabled
-by default. Keep application-level source grounding, citation validation,
-redaction, and service telemetry authoritative.
-
-The default test suite uses deterministic transports and AgentFlow lifecycle
-hooks; it makes no Anthropic or Tavily calls. HTTP service tests use in-process
-request/response doubles, so the default suite also requires no socket access.
-The installed CG AgentFlow version does not expose provider injection on
-`createAgentFromFile`, so the
-limitation and test workaround are recorded in
-[`docs/agent-flow-findings.md`](./docs/agent-flow-findings.md).
+No live Anthropic or Tavily call, network exporter, HTTP route, framework retry,
+or persistent evaluation report is enabled by this showcase command.
 
 ## Requirements
 
 - Node.js 24.x
 - npm 9 or later
-- For CG AgentFlow packages: a GitHub token with `read:packages`, supplied only
-  through `NODE_AUTH_TOKEN`
+- A GitHub token with `read:packages` for the CG AgentFlow packages, supplied
+  only through `NODE_AUTH_TOKEN`
+
+The required package names are `@cadmusgroup-llc/cg-agent-flow-core`, `-llm`,
+`-tools`, `-agents`, `-guardrails`, `-memory`, `-observability`, and
+`-evaluation`, all at `0.17.1`. The token-free `.npmrc` reads the token only
+from `NODE_AUTH_TOKEN`; never put credentials in `.npmrc`, `.env`, source
+code, logs, or commits.
 
 ## Setup and commands
 
@@ -106,70 +126,52 @@ npm run build
 npm start
 ```
 
-The repository's `.npmrc` maps `@cadmusgroup-llc` to GitHub Packages and reads
-its token only from `NODE_AUTH_TOKEN`. Do not add credentials to `.npmrc`,
-`.env`, source code, logs, or commits. Use environment or secret-store
-configuration instead.
-
-The application reads configuration from the process environment. It does not
-automatically load `.env`, so load the ignored local file into your shell before
-starting the service:
+The application reads configuration from the process environment and does not
+automatically load `.env`:
 
 ```sh
 cp .env.example .env
-# Edit .env and replace both placeholder values with your own keys.
+# Edit .env and add local values.
 set -a
 . ./.env
 set +a
 ```
 
-Never commit `.env` or replace the placeholders in `.env.example` with real
-credentials.
+`ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, and `RESEARCH_API_KEY` are optional for
+local startup and required when `NODE_ENV=production`. Validation errors name
+invalid fields without returning supplied values.
 
-## Testing the agent
+## Testing the running agent
 
-Use the following checks to confirm both the code and the running agent behave
-as expected.
-
-### 1. Run the offline test suite
-
-This is the first check and requires no provider credentials or network access:
+The deterministic default suite requires no provider credentials, network
+access, or socket access:
 
 ```sh
 npm test
 ```
 
-All tests should pass. The suite covers request/response validation, search and
-page-reading boundaries, source grounding, session-memory isolation, HTTP
-errors, health/readiness, authentication, rate/concurrency controls, deadlines,
-CostGuard, telemetry redaction, and graceful shutdown. It does not call
-Anthropic or Tavily.
+It covers contracts, retrieval boundaries, source grounding, memory
+isolation, HTTP errors, health/readiness, authentication, rate and concurrency
+controls, deadlines, `CostGuard`, telemetry redaction, shutdown, and the
+framework integration/showcase. It makes no Anthropic or Tavily calls.
 
-### 2. Start the service with provider credentials
-
-You need both an Anthropic key and a Tavily key for a real research request.
-After loading `.env` as shown above, start the service:
+For a real request, build and start the service in production mode:
 
 ```sh
 npm run build
 NODE_ENV=production PORT=3000 npm start
 ```
 
-Keep that terminal running. In a second terminal, check liveness and readiness:
+In another terminal, check liveness and readiness:
 
 ```sh
 curl http://localhost:3000/health
 curl -H "Authorization: Bearer $RESEARCH_API_KEY" http://localhost:3000/ready
 ```
 
-Expected responses are:
+Expected responses are `{"status":"ok"}` and `{"status":"ready"}`.
 
-```json
-{"status":"ok"}
-{"status":"ready"}
-```
-
-### 3. Submit a research request
+Submit a request:
 
 ```sh
 curl -sS -X POST http://localhost:3000/research \
@@ -178,88 +180,32 @@ curl -sS -X POST http://localhost:3000/research \
   -d '{"topic":"How do current battery technologies compare?"}'
 ```
 
-A successful response contains:
+The response includes a normalized topic, generated `sessionId` and `runId`,
+brief, observed `sources`, and `uncertainty` (text or `null`). Reuse the
+returned `sessionId` for a follow-up; a different session must not receive
+that conversation’s context.
 
-- a normalized `topic`;
-- a generated `sessionId`;
-- a `runId` for this research run;
-- a concise `brief`;
-- `sources` containing observed HTTP URLs; and
-- an `uncertainty` value, either text or `null`.
-
-The request should cause the agent to search the web and read relevant pages.
-The returned sources should support the brief; fabricated URLs should not be
-accepted.
-
-### 4. Verify follow-up memory
-
-Copy the `sessionId` from the first response and use it in a follow-up:
-
-```sh
-curl -sS -X POST http://localhost:3000/research \
-  -H "Authorization: Bearer $RESEARCH_API_KEY" \
-  -H 'content-type: application/json' \
-  -d '{"topic":"What evidence in the previous answer is most uncertain?","sessionId":"PASTE_SESSION_ID_HERE"}'
-```
-
-The response should preserve the supplied `sessionId`. A follow-up using a
-different session ID should not receive the first session’s conversation
-context.
-
-### 5. Check a validation failure
-
-```sh
-curl -i -sS -X POST http://localhost:3000/research \
-  -H "Authorization: Bearer $RESEARCH_API_KEY" \
-  -H 'content-type: application/json' \
-  -d '{"topic":"   "}'
-```
-
-The service should return HTTP `400` with this sanitized shape:
+Invalid input such as `{"topic":"   "}` returns HTTP 400 with the sanitized
+shape:
 
 ```json
 { "error": { "code": "INVALID_REQUEST", "message": "The request is invalid." } }
 ```
 
-Press `Ctrl-C` in the server terminal when finished. The service should stop
-accepting new requests and allow an in-flight request to finish.
+Press `Ctrl-C` to stop the service. It stops accepting new requests and lets
+an in-flight request finish. If provider credentials are unavailable, use
+`NODE_ENV=development` to exercise `/health` and `/ready`; a real research
+request still requires Anthropic and Tavily access.
 
-If you do not have provider credentials, start with `NODE_ENV=development` to
-exercise `/health` and `/ready`; a real `/research` request cannot complete
-without Anthropic and Tavily access.
-
-For GitHub Actions, configure `GH_PACKAGES_TOKEN` as a repository secret holding
-a package-read credential. The CI workflow maps it to `NODE_AUTH_TOKEN` only for
-the `npm ci` step.
-
-`ANTHROPIC_API_KEY` and `TAVILY_API_KEY` are optional for this local foundation
-command. `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, and `RESEARCH_API_KEY` are
-required when `NODE_ENV=production`; validation errors name invalid fields
-without returning supplied values.
-
-## Manual Tavily check
-
-The deterministic test suite never makes a live provider call. For the
-credential-supplied, opt-in connectivity check and evidence rules, see
+For GitHub Actions, configure `GH_PACKAGES_TOKEN` as a repository secret. CI
+maps it to `NODE_AUTH_TOKEN` only for the `npm ci` step. For the opt-in live
+Tavily connectivity check, see
 [`docs/tavily-manual-check.md`](./docs/tavily-manual-check.md).
-
-## CG AgentFlow integration note
-
-The required package names are `@cadmusgroup-llc/cg-agent-flow-core`, `-llm`,
-`-tools`, `-agents`, `-guardrails`, `-memory`, `-observability`, and
-`-evaluation`; all are pinned to `0.17.1`, as retrieved from the authorized
-GitHub Packages registry on 2026-08-01. Context7 does not provide documentation
-for this private package family. The installed `createAgentFromFile` factory
-API is covered by the Phase 5 deterministic integration tests. Do not replace these packages with
-similarly named public packages.
 
 ## Delivery status
 
-Phases 1–7 and the optional framework showcase are complete. The repository was
-verified with 63 deterministic tests,
-strict OpenSpec validation, formatting, linting, type checking, and a
-production build. The current roadmap ends at the non-production service
-scope; container deployment, hosting, and release acceptance are out of scope.
-See
+Phases 1–7 and the optional framework showcase are complete. The repository’s
+roadmap ends at the non-production service scope; container deployment,
+hosting, and release acceptance are out of scope. See
 [`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
 exit criteria.
