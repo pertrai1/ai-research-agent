@@ -31,6 +31,11 @@ Research calls are rate- and concurrency-limited, body-bounded, deadline-
 cancelled, and emit privacy-safe correlated telemetry; `/health` remains
 unauthenticated for liveness and `/ready` is authenticated.
 
+The agent also enforces the YAML-declared per-run CostGuard budget and emits
+bounded request, agent, provider, and tool metrics without retaining prompts,
+retrieved pages, credentials, headers, or raw provider errors. CORS is disabled
+unless an explicit origin allow-list is configured.
+
 Conversation memory is process-local and bounded to the most recent 50
 messages per session by the YAML-declared sliding window. A process restart
 clears this store: an interrupted run starts again from the beginning, and
@@ -112,8 +117,9 @@ npm test
 
 All tests should pass. The suite covers request/response validation, search and
 page-reading boundaries, source grounding, session-memory isolation, HTTP
-errors, health/readiness, and graceful shutdown. It does not call Anthropic or
-Tavily.
+errors, health/readiness, authentication, rate/concurrency controls, deadlines,
+CostGuard, telemetry redaction, and graceful shutdown. It does not call
+Anthropic or Tavily.
 
 ### 2. Start the service with provider credentials
 
@@ -167,6 +173,7 @@ Copy the `sessionId` from the first response and use it in a follow-up:
 
 ```sh
 curl -sS -X POST http://localhost:3000/research \
+  -H "Authorization: Bearer $RESEARCH_API_KEY" \
   -H 'content-type: application/json' \
   -d '{"topic":"What evidence in the previous answer is most uncertain?","sessionId":"PASTE_SESSION_ID_HERE"}'
 ```
@@ -179,6 +186,7 @@ context.
 
 ```sh
 curl -i -sS -X POST http://localhost:3000/research \
+  -H "Authorization: Bearer $RESEARCH_API_KEY" \
   -H 'content-type: application/json' \
   -d '{"topic":"   "}'
 ```
@@ -201,8 +209,9 @@ a package-read credential. The CI workflow maps it to `NODE_AUTH_TOKEN` only for
 the `npm ci` step.
 
 `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` are optional for this local foundation
-command. They are required when `NODE_ENV=production`; validation errors name
-invalid fields without returning supplied values.
+command. `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, and `RESEARCH_API_KEY` are
+required when `NODE_ENV=production`; validation errors name invalid fields
+without returning supplied values.
 
 ## Manual Tavily check
 
@@ -222,9 +231,9 @@ similarly named public packages.
 
 ## Delivery status
 
-Phases 1–6 are complete. Phase 6 was verified with 45 deterministic tests,
+Phases 1–7 are complete. Phase 7 was verified with 56 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, and a
-production build. Phase 7 is the next implementation phase and adds
-production controls and observability. See
+production build. Phase 8 is the next implementation phase and covers
+container deployment, evaluation, and release evidence. See
 [`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
 exit criteria.

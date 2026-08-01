@@ -249,6 +249,9 @@ CostGuard enforcement, request deadline/cancellation coverage, sanitized
 AgentFlow lifecycle telemetry, metrics, formatting, linting, type checking, and
 a production build. No live provider calls are made by the default suite.
 
+Phase 8 is now the next incomplete phase; deployment, evaluation, and release
+work must not begin until its scope is explicitly taken up.
+
 ### Exit criteria
 
 - Unauthenticated, oversized, excessive-rate, and excess-concurrency requests are rejected with stable responses.
