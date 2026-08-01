@@ -37,13 +37,13 @@ All application, test, infrastructure, and deployment tasks below begin unchecke
 
 ### Tasks
 
-- [ ] 1.1 Pin Node.js 24 and npm 9+ expectations and create TypeScript 7 build, prettier/eslint/eslint-plugin-llm-core lint and formatting, vitest test, and start commands that succeed on a minimal service entry point.
-- [ ] 1.2 Add a token-free GitHub Packages configuration for the `@cadmusgroup-llc` scope and document local `read:packages` authentication without storing a literal token.
-- [ ] 1.3 Add ignore rules for credential-bearing local npm configuration, `.env` files, dependencies, build output, test output, and coverage.
-- [ ] 1.4 Add environment parsing tests that fail for missing or malformed required values and verify error output contains no secret values.
-- [ ] 1.5 Implement the smallest Zod-backed environment loader that passes those tests and distinguishes local optional configuration from production-required secrets.
-- [ ] 1.6 Add CI jobs that install from the lockfile and run type checking, linting, unit tests, and the production build with package credentials injected as secrets.
-- [ ] 1.7 Pin CG AgentFlow package versions used by the project and record any documentation/package discrepancy that requires an integration test.
+- [x] 1.1 Pin Node.js 24 and npm 9+ expectations and create TypeScript 7 build, prettier/eslint/eslint-plugin-llm-core lint and formatting, vitest test, and start commands that succeed on a minimal service entry point.
+- [x] 1.2 Add a token-free GitHub Packages configuration for the `@cadmusgroup-llc` scope and document local `read:packages` authentication without storing a literal token.
+- [x] 1.3 Add ignore rules for credential-bearing local npm configuration, `.env` files, dependencies, build output, test output, and coverage.
+- [x] 1.4 Add environment parsing tests that fail for missing or malformed required values and verify error output contains no secret values.
+- [x] 1.5 Implement the smallest Zod-backed environment loader that passes those tests and distinguishes local optional configuration from production-required secrets.
+- [x] 1.6 Add CI jobs that install from the lockfile and run type checking, linting, unit tests, and the production build with package credentials injected as secrets.
+- [x] 1.7 Pin CG AgentFlow package versions used by the project and record any documentation/package discrepancy that requires an integration test.
 
 ### Exit criteria
 

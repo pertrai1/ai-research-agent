@@ -1,13 +1,45 @@
 {
   "name": "ai-research-agent",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.1.0",
+  "description": "Read-only autonomous research agent.",
+  "private": true,
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p tsconfig.build.json",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "type": "commonjs"
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=9"
+  },
+  "dependencies": {
+    "@cadmusgroup-llc/cg-agent-flow-agents": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-core": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-evaluation": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-guardrails": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-llm": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-memory": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-observability": "0.17.1",
+    "@cadmusgroup-llc/cg-agent-flow-tools": "0.17.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@types/node": "24.13.3",
+    "eslint": "9.39.4",
+    "eslint-plugin-llm-core": "0.35.1",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.9"
+  }
 }

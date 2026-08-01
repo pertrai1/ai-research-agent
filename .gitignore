@@ -1,1 +1,11 @@
 .codex
+node_modules/
+dist/
+coverage/
+.env
+.env.*
+!.env.example
+.npmrc.local
+.npmrc.*
+test-results/
+.vitest/
