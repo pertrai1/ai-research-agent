@@ -160,18 +160,23 @@ hardening change.
 
 **Requirements:** §4.1, §4.3, FR-2, FR-5, §6, SEC-1, SEC-3, §8, §9, §11.1, §11.2, §14, §15, AC-2, AC-3, AC-4, AC-6, AC-8.
 
+**Status:** Complete on 2026-08-01. Verified with strict OpenSpec validation,
+34 deterministic tests, formatting, linting, type checking, and a production
+build; no live provider calls are made by the default suite. A package
+integration finding is recorded in `docs/agent-flow-findings.md`.
+
 ### Tasks
 
-- [ ] 5.1 Add failing YAML validation tests for `react`, explicit Anthropic provider/model configuration, temperature `0.2`, 1,500 output tokens, no more than 15 iterations, bounded observations, and exactly `web_search` plus `read_page`.
-- [ ] 5.2 Create the agent YAML and configuration overrides needed to pass the declarative-spec tests without moving representable behavior into application code.
-- [ ] 5.3 Add failing factory tests using fake providers to prove `createAgentFromFile` resolves only the two approved tools and rejects unregistered tool calls.
-- [ ] 5.4 Implement runtime dependency construction and the tool resolver needed to create the `ReActAgent` through the documented factory.
-- [ ] 5.5 Add failing deterministic agent tests for search selection, page-read selection, max-iteration termination, bounded observations, and relevant trace events.
-- [ ] 5.6 Implement and verify the bounded reasoning loop configuration through CG AgentFlow behavior rather than a duplicate application loop.
-- [ ] 5.7 Add failing source-ledger tests proving final sources are members of URLs observed during the run and fabricated URLs are rejected.
-- [ ] 5.8 Implement per-run source tracking, claim-oriented citation guidance, and insufficient/conflicting-evidence behavior.
-- [ ] 5.9 Add failing tests for invalid final output and implement one fixed-limit repair path followed by a typed failure.
-- [ ] 5.10 Refactor agent assembly and output processing while the deterministic agent and grounding suites remain green.
+- [x] 5.1 Add failing YAML validation tests for `react`, explicit Anthropic provider/model configuration, temperature `0.2`, 1,500 output tokens, no more than 15 iterations, bounded observations, and exactly `web_search` plus `read_page`.
+- [x] 5.2 Create the agent YAML and configuration overrides needed to pass the declarative-spec tests without moving representable behavior into application code.
+- [x] 5.3 Add failing factory tests using fake providers to prove `createAgentFromFile` resolves only the two approved tools and rejects unregistered tool calls.
+- [x] 5.4 Implement runtime dependency construction and the tool resolver needed to create the `ReActAgent` through the documented factory.
+- [x] 5.5 Add failing deterministic agent tests for search selection, page-read selection, max-iteration termination, bounded observations, and relevant trace events.
+- [x] 5.6 Implement and verify the bounded reasoning loop configuration through CG AgentFlow behavior rather than a duplicate application loop.
+- [x] 5.7 Add failing source-ledger tests proving final sources are members of URLs observed during the run and fabricated URLs are rejected.
+- [x] 5.8 Implement per-run source tracking, claim-oriented grounding guidance, and insufficient/conflicting-evidence behavior.
+- [x] 5.9 Add failing tests for invalid final output and implement one fixed-limit repair path followed by a typed failure.
+- [x] 5.10 Refactor agent assembly and output processing while the deterministic agent and grounding suites remain green.
 
 ### Exit criteria
 
