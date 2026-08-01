@@ -27,7 +27,7 @@ graceful shutdown. `GET /health` is a provider-free liveness check; `GET
 /ready` checks authenticated service readiness; `POST /research` runs a
 research request.
 
-[!screenshot](./screenshot.png)
+![screenshot](./screenshot.png)
 
 ## What CG AgentFlow contributes to the tutorial reproduction
 
