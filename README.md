@@ -1,9 +1,9 @@
 # AI Research Agent
 
-Read-only autonomous web research agent. Phase 2 adds validated contracts for
-research requests and responses, model output, future search/page-reader tool
-I/O, provider payloads, and sanitized public errors. The project does not yet
-expose research endpoints or provider integrations.
+Read-only autonomous web research agent. Phase 3 adds a dependency-injected,
+bounded Tavily `web_search` capability with validated results, timeout and
+transient-only retry controls, and privacy-safe telemetry. The project does not
+yet expose research endpoints, agent assembly, or page reading.
 
 ## Requirements
 
@@ -36,6 +36,12 @@ the `npm ci` step.
 `ANTHROPIC_API_KEY` and `TAVILY_API_KEY` are optional for this local foundation
 command. They are required when `NODE_ENV=production`; validation errors name
 invalid fields without returning supplied values.
+
+## Manual Tavily check
+
+The deterministic test suite never makes a live provider call. For the
+credential-supplied, opt-in connectivity check and evidence rules, see
+[`docs/tavily-manual-check.md`](./docs/tavily-manual-check.md).
 
 ## CG AgentFlow integration note
 
