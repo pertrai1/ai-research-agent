@@ -9,16 +9,16 @@ validated research tools and returns source-grounded structured briefs.
 
 ### Requirement: Declarative bounded ReAct configuration
 
-The agent specification SHALL define a `react` agent with an explicit Anthropic provider, configurable model, temperature `0.2`, maximum output tokens `1500`, no more than `15` iterations, bounded tool observations, and exactly the `web_search` and `read_page` tools.
+The agent specification SHALL define a `react` agent with an explicit Anthropic provider, configurable model, temperature `0.2`, maximum output tokens `1500`, no more than `15` iterations, bounded tool observations, a per-run CostGuard with `maxCostPerRequest` and `onExceeded: error`, and exactly the `web_search` and `read_page` tools.
 
 #### Scenario: Valid specification passes validation
 
-- **WHEN** the repository loads the Phase 5 YAML specification with valid configuration overrides
-- **THEN** validation succeeds and exposes the required agent type, provider, defaults, bounds, observation limit, and exact two-tool allow-list
+- **WHEN** the repository loads the Phase 7 YAML specification with valid configuration overrides
+- **THEN** validation succeeds and exposes the required agent type, provider, defaults, bounds, budget policy, observation limit, and exact two-tool allow-list
 
 #### Scenario: Unsafe or incomplete specification is rejected
 
-- **WHEN** the specification omits a required field, exceeds an iteration/token bound, uses another provider, or names a third tool
+- **WHEN** the specification omits a required field, exceeds an iteration/token/budget bound, uses another provider, names a third tool, or omits CostGuard error behavior
 - **THEN** validation fails with a sanitized configuration error before agent creation
 
 ### Requirement: Restricted factory assembly
