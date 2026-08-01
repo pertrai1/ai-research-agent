@@ -23,6 +23,6 @@ Expected output is `{"ok":true,"resultCount":<one-to-five>}`. Do not print
 the key, authorization header, raw response, or complete search result payload
 when recording evidence.
 
-Status: not run in this worktree on 2026-08-01 because `TAVILY_API_KEY` was not
-available. Execute this command with an operator-supplied key before marking
-Roadmap Phase 3 complete.
+Status: passed on 2026-08-01 with an operator-supplied key. The sanitized
+application check returned `ok: true` with five normalized results. The key was
+loaded from the ignored local `.env` and was never printed or committed.

@@ -97,12 +97,12 @@ tests, and a production build; no provider calls are made by the test suite.
 
 ### Tasks
 
-- [ ] 3.1 Add failing tests around a fake Tavily transport for query validation, five-result default/maximum behavior, normalized fields, timeout, transient-only retry, and malformed responses.
-- [ ] 3.2 Add failing tests proving API keys and authentication headers are absent from tool observations, errors, logs, and serialized results.
-- [ ] 3.3 Implement the Tavily transport and `web_search` tool with injected dependencies, `TAVILY_API_KEY`, explicit timeout, bounded exponential backoff, and Zod response parsing.
-- [ ] 3.4 Emit structured search telemetry containing duration, outcome, result count, and no sensitive request material.
-- [ ] 3.5 Refactor transport/tool separation while all fake-provider tests remain green.
-- [ ] 3.6 Run and document one manually triggered sandbox Tavily check without placing a live-provider dependency in the default test suite.
+- [x] 3.1 Add failing tests around a fake Tavily transport for query validation, five-result default/maximum behavior, normalized fields, timeout, transient-only retry, and malformed responses.
+- [x] 3.2 Add failing tests proving API keys and authentication headers are absent from tool observations, errors, logs, and serialized results.
+- [x] 3.3 Implement the Tavily transport and `web_search` tool with injected dependencies, `TAVILY_API_KEY`, explicit timeout, bounded exponential backoff, and Zod response parsing.
+- [x] 3.4 Emit structured search telemetry containing duration, outcome, result count, and no sensitive request material.
+- [x] 3.5 Refactor transport/tool separation while all fake-provider tests remain green.
+- [x] 3.6 Run and document one manually triggered sandbox Tavily check without placing a live-provider dependency in the default test suite.
 
 ### Exit criteria
 

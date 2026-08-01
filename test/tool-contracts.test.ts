@@ -39,6 +39,40 @@ describe('tool contracts', () => {
     });
   });
 
+  it('accepts Tavily envelope metadata and raw content without returning it', () => {
+    expect(
+      parseTavilySearchResponse({
+        answer: null,
+        follow_up_questions: null,
+        images: [],
+        query: 'battery recycling',
+        request_id: 'request-1',
+        response_time: 0.42,
+        results: [
+          {
+            content: 'A concise result snippet.',
+            raw_content: null,
+            score: 0.98,
+            title: 'Research paper',
+            url: 'https://example.com/paper',
+          },
+        ],
+      }),
+    ).toEqual({
+      ok: true,
+      value: {
+        results: [
+          {
+            relevanceScore: 0.98,
+            snippet: 'A concise result snippet.',
+            title: 'Research paper',
+            url: 'https://example.com/paper',
+          },
+        ],
+      },
+    });
+  });
+
   it('accepts one credential-free HTTP(S) page URL and bounded textual output', () => {
     expect(
       parsePageReaderInput({ url: 'https://example.com/article' }),

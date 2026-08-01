@@ -49,14 +49,30 @@ const searchInputSchema = z
 const tavilyResultSchema = z
   .object({
     content: z.string().trim().min(1),
+    raw_content: z.string().nullable().optional(),
     score: z.number().finite().optional(),
     title: z.string().trim().min(1),
     url: z.url().refine(isHttpUrl),
   })
   .strict();
 
+const tavilyImageSchema = z
+  .object({
+    description: z.string().optional(),
+    url: z.url().refine(isHttpUrl),
+  })
+  .strict();
+
 const tavilySearchResponseSchema = z
-  .object({ results: z.array(tavilyResultSchema).max(MAX_SEARCH_RESULTS) })
+  .object({
+    answer: z.string().nullable().optional(),
+    follow_up_questions: z.array(z.string()).nullable().optional(),
+    images: z.array(tavilyImageSchema).optional(),
+    query: z.string().optional(),
+    request_id: z.string().optional(),
+    response_time: z.number().finite().optional(),
+    results: z.array(tavilyResultSchema).max(MAX_SEARCH_RESULTS),
+  })
   .strict();
 
 const pageReaderInputSchema = z
