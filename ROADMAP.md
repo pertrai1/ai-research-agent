@@ -95,6 +95,11 @@ tests, and a production build; no provider calls are made by the test suite.
 
 **Requirements:** FR-3, SEC-1, SEC-4, §8, §9, §11.1, AC-2.
 
+**Status:** Complete on 2026-08-01. Verified with 19 deterministic tests,
+strict OpenSpec validation, formatting, linting, type checking, a production
+build, and a live Tavily check returning five normalized results. The next
+incomplete roadmap work is Phase 4.
+
 ### Tasks
 
 - [x] 3.1 Add failing tests around a fake Tavily transport for query validation, five-result default/maximum behavior, normalized fields, timeout, transient-only retry, and malformed responses.

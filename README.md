@@ -29,6 +29,11 @@ its token only from `NODE_AUTH_TOKEN`. Do not add credentials to `.npmrc`,
 `.env`, source code, logs, or commits. Use environment or secret-store
 configuration instead.
 
+For local provider checks, copy `.env.example` to `.env` and fill in your own
+`TAVILY_API_KEY`. The current Phase 3 manual check loads that ignored file only
+for the command; the deterministic test suite never loads it or makes a live
+provider request.
+
 For GitHub Actions, configure `GH_PACKAGES_TOKEN` as a repository secret holding
 a package-read credential. The CI workflow maps it to `NODE_AUTH_TOKEN` only for
 the `npm ci` step.
