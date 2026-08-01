@@ -77,10 +77,109 @@ its token only from `NODE_AUTH_TOKEN`. Do not add credentials to `.npmrc`,
 `.env`, source code, logs, or commits. Use environment or secret-store
 configuration instead.
 
-For local provider checks, copy `.env.example` to `.env` and fill in your own
-`TAVILY_API_KEY`. The current Phase 3 manual check loads that ignored file only
-for the command; the deterministic test suite never loads it or makes a live
-provider request.
+The application reads configuration from the process environment. It does not
+automatically load `.env`; if you use a `.env` file, load it into your shell or
+export the variables explicitly before starting the service.
+
+## Testing the agent
+
+Use the following checks to confirm both the code and the running agent behave
+as expected.
+
+### 1. Run the offline test suite
+
+This is the first check and requires no provider credentials or network access:
+
+```sh
+npm test
+```
+
+All tests should pass. The suite covers request/response validation, search and
+page-reading boundaries, source grounding, session-memory isolation, HTTP
+errors, health/readiness, and graceful shutdown. It does not call Anthropic or
+Tavily.
+
+### 2. Start the service with provider credentials
+
+You need both an Anthropic key and a Tavily key for a real research request.
+Enter them without putting the values in the command history:
+
+```sh
+read -rs ANTHROPIC_API_KEY; export ANTHROPIC_API_KEY
+read -rs TAVILY_API_KEY; export TAVILY_API_KEY
+npm run build
+NODE_ENV=production PORT=3000 npm start
+```
+
+Keep that terminal running. In a second terminal, check liveness and readiness:
+
+```sh
+curl http://localhost:3000/health
+curl http://localhost:3000/ready
+```
+
+Expected responses are:
+
+```json
+{"status":"ok"}
+{"status":"ready"}
+```
+
+### 3. Submit a research request
+
+```sh
+curl -sS -X POST http://localhost:3000/research \
+  -H 'content-type: application/json' \
+  -d '{"topic":"How do current battery technologies compare?"}'
+```
+
+A successful response contains:
+
+- a normalized `topic`;
+- a generated `sessionId`;
+- a `runId` for this research run;
+- a concise `brief`;
+- `sources` containing observed HTTP URLs; and
+- an `uncertainty` value, either text or `null`.
+
+The request should cause the agent to search the web and read relevant pages.
+The returned sources should support the brief; fabricated URLs should not be
+accepted.
+
+### 4. Verify follow-up memory
+
+Copy the `sessionId` from the first response and use it in a follow-up:
+
+```sh
+curl -sS -X POST http://localhost:3000/research \
+  -H 'content-type: application/json' \
+  -d '{"topic":"What evidence in the previous answer is most uncertain?","sessionId":"PASTE_SESSION_ID_HERE"}'
+```
+
+The response should preserve the supplied `sessionId`. A follow-up using a
+different session ID should not receive the first session’s conversation
+context.
+
+### 5. Check a validation failure
+
+```sh
+curl -i -sS -X POST http://localhost:3000/research \
+  -H 'content-type: application/json' \
+  -d '{"topic":"   "}'
+```
+
+The service should return HTTP `400` with this sanitized shape:
+
+```json
+{ "error": { "code": "INVALID_REQUEST", "message": "The request is invalid." } }
+```
+
+Press `Ctrl-C` in the server terminal when finished. The service should stop
+accepting new requests and allow an in-flight request to finish.
+
+If you do not have provider credentials, start with `NODE_ENV=development` to
+exercise `/health` and `/ready`; a real `/research` request cannot complete
+without Anthropic and Tavily access.
 
 For GitHub Actions, configure `GH_PACKAGES_TOKEN` as a repository secret holding
 a package-read credential. The CI workflow maps it to `NODE_AUTH_TOKEN` only for
