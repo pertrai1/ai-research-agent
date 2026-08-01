@@ -24,6 +24,8 @@ const MAX_ITERATIONS = 15;
 const MAX_TOKENS = 1500;
 const MAX_OBSERVATION_LENGTH = 12000;
 const DEFAULT_TEMPERATURE = 0.2;
+const DEFAULT_MEMORY_MAX_MESSAGES = 50;
+type ReactAgentSpec = Extract<ReturnType<typeof loadSpec>, { type: 'react' }>;
 
 export type ResearchAgentDependencies = {
   webSearch: WebSearchTool;
@@ -67,12 +69,8 @@ export function validateResearchAgentSpec(
     }
     const config = spec.config;
     if (
-      config.provider !== 'anthropic' ||
-      config.temperature !== DEFAULT_TEMPERATURE ||
-      config.maxTokens !== MAX_TOKENS ||
-      config.maxIterations !== MAX_ITERATIONS ||
-      config.maxObservationLength !== MAX_OBSERVATION_LENGTH ||
-      !sameTools(config.tools)
+      !hasExpectedAgentConfig(config) ||
+      !hasExpectedMemoryConfig(spec.memory)
     ) {
       return { ok: false, error: { code: 'INVALID_AGENT_CONFIG' } };
     }
@@ -92,6 +90,27 @@ export function validateResearchAgentSpec(
   } catch {
     return { ok: false, error: { code: 'INVALID_AGENT_CONFIG' } };
   }
+}
+
+function hasExpectedAgentConfig(config: ReactAgentSpec['config']): boolean {
+  return (
+    config.provider === 'anthropic' &&
+    config.temperature === DEFAULT_TEMPERATURE &&
+    config.maxTokens === MAX_TOKENS &&
+    config.maxIterations === MAX_ITERATIONS &&
+    config.maxObservationLength === MAX_OBSERVATION_LENGTH &&
+    sameTools(config.tools)
+  );
+}
+
+function hasExpectedMemoryConfig(memory: ReactAgentSpec['memory']): boolean {
+  const configs = Array.isArray(memory) ? memory : memory ? [memory] : [];
+  const conversation = configs.find((item) => item.type === 'conversation');
+  return (
+    conversation?.strategy === 'sliding-window' &&
+    conversation.maxMessages === DEFAULT_MEMORY_MAX_MESSAGES &&
+    conversation.sessionField === 'sessionId'
+  );
 }
 
 export function createResearchAgent({
@@ -142,11 +161,12 @@ export async function runResearchAgent({
   });
   const prompt = researchPrompt({ topic, sessionId, runId });
 
-  let agentResult = await agent.run(prompt);
+  let agentResult = await agent.run(prompt, { sessionId });
   let parsed = parseGroundedAnswer(agentResult, observedUrls);
   if (!parsed.ok) {
     agentResult = await agent.run(
       `${prompt}\n\nYour previous output was invalid. Return corrected JSON only. Do not add sources not observed through tools.`,
+      { sessionId },
     );
     parsed = parseGroundedAnswer(agentResult, observedUrls);
   }

@@ -193,18 +193,24 @@ integration finding is recorded in `docs/agent-flow-findings.md`.
 
 **Requirements:** FR-1, FR-2, FR-6, FR-7, FR-8, §11.2, §11.3, §14, AC-1, AC-3, AC-4, AC-5, AC-9.
 
+**Status:** Complete on 2026-08-01. Verified with bounded local memory and
+HTTP service tests, provider-free health/readiness tests, graceful shutdown
+draining, strict OpenSpec validation, formatting, linting, type checking, 45
+deterministic tests, and a production build. Memory is process-local; exact
+mid-run checkpoint recovery remains outside the initial implementation.
+
 ### Tasks
 
-- [ ] 6.1 Add failing memory tests for a YAML-declared sliding window, configurable 50-message default, same-session follow-up context, and cross-session isolation.
-- [ ] 6.2 Configure CG AgentFlow memory lifecycle hooks through `createAgentFromFile` and implement an in-memory local `MemoryStore` that passes isolation tests.
-- [ ] 6.3 Document restart-from-beginning semantics for interrupted runs and keep exact mid-run checkpoint recovery outside the initial implementation.
-- [ ] 6.4 Add failing API tests for valid/invalid `POST /research`, generated and supplied session IDs, normalized topics, structured responses, and run IDs.
-- [ ] 6.5 Implement the HTTP research route and request-to-agent integration needed to pass the API contract tests.
-- [ ] 6.6 Add failing API tests for every stable error category, status mapping, and forbidden error detail, then connect the typed mapper at the service boundary.
-- [ ] 6.7 Add failing tests proving `GET /health` performs no provider call and `GET /ready` checks required configuration/local dependencies without meaningful model cost.
-- [ ] 6.8 Implement liveness and readiness routes that pass those no-LLM tests.
-- [ ] 6.9 Add graceful-shutdown and in-flight request tests, then implement signal handling and request draining.
-- [ ] 6.10 Refactor route and service boundaries while all memory, API, and integration tests remain green.
+- [x] 6.1 Add failing memory tests for a YAML-declared sliding window, configurable 50-message default, same-session follow-up context, and cross-session isolation.
+- [x] 6.2 Configure CG AgentFlow memory lifecycle hooks through `createAgentFromFile` and implement an in-memory local `MemoryStore` that passes isolation tests.
+- [x] 6.3 Document restart-from-beginning semantics for interrupted runs and keep exact mid-run checkpoint recovery outside the initial implementation.
+- [x] 6.4 Add failing API tests for valid/invalid `POST /research`, generated and supplied session IDs, normalized topics, structured responses, and run IDs.
+- [x] 6.5 Implement the HTTP research route and request-to-agent integration needed to pass the API contract tests.
+- [x] 6.6 Add failing API tests for every stable error category, status mapping, and forbidden error detail, then connect the typed mapper at the service boundary.
+- [x] 6.7 Add failing tests proving `GET /health` performs no provider call and `GET /ready` checks required configuration/local dependencies without meaningful model cost.
+- [x] 6.8 Implement liveness and readiness routes that pass those no-LLM tests.
+- [x] 6.9 Add graceful-shutdown and in-flight request tests, then implement signal handling and request draining.
+- [x] 6.10 Refactor route and service boundaries while all memory, API, and integration tests remain green.
 
 ### Exit criteria
 

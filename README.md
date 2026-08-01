@@ -5,7 +5,7 @@ injected, bounded `web_search` and `read_page` capabilities with validated
 results, SSRF-resistant URL handling, timeout and retry controls, bounded text
 extraction, untrusted-content delimiters, and privacy-safe telemetry. Phase 5
 assembles those capabilities into a YAML-defined CG AgentFlow ReAct agent with
-source grounding. The HTTP API and conversation memory remain Phase 6 work.
+source grounding; Phase 6 adds a session-scoped in-memory window and HTTP service.
 
 ## Implemented capabilities
 
@@ -22,9 +22,14 @@ are removed. Retrieved text is explicitly marked as untrusted evidence, so
 page instructions are not treated as agent instructions.
 
 Both capabilities are library-level tools with injected transports and are
-registered by the Phase 5 research-agent assembly. The assembly is available
-through [`src/research-agent.ts`](./src/research-agent.ts); it is not yet a
-public HTTP endpoint.
+registered by the research-agent assembly. `POST /research` returns the
+validated structured brief; `GET /health` is a provider-free liveness check and
+`GET /ready` checks local/configuration readiness.
+
+Conversation memory is process-local and bounded to the most recent 50
+messages per session by the YAML-declared sliding window. A process restart
+clears this store: an interrupted run starts again from the beginning, and
+exact mid-run checkpoint recovery is not provided in the initial service.
 
 ## Research agent
 
@@ -104,6 +109,6 @@ similarly named public packages.
 
 Phases 1–5 are complete. Phase 5 was verified with 34 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, and a
-production build. Phase 6 will add the HTTP service and session memory. See
+production build. Phase 6 adds the HTTP service and session memory. See
 [`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
 exit criteria.
