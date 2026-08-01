@@ -65,17 +65,21 @@ literal-secret scan.
 
 **Requirements:** §4.1, §4.3, FR-1, FR-2, FR-3, FR-4, FR-8, §8, §11.1.
 
+**Status:** Complete in commit `c0251fe` (2026-08-01). Verified with strict
+OpenSpec validation, formatting, linting, type checking, deterministic contract
+tests, and a production build; no provider calls are made by the test suite.
+
 ### Tasks
 
-- [ ] 2.1 Add failing tests for topic trimming, empty topics, the 300-character limit, optional session IDs, generated-session behavior, and request-body shape.
-- [ ] 2.2 Implement the request schema and normalization helpers needed to pass the request-contract tests.
-- [ ] 2.3 Add failing tests for the structured research response: normalized topic, session ID, brief, source list, uncertainty fields, run ID, and 500-word maximum.
-- [ ] 2.4 Implement the response and model-output schemas without TypeScript assertion-based acceptance, including a typed invalid-output result.
-- [ ] 2.5 Add failing schema tests for bounded search queries/results and single-URL page-reader input/output, including provider payload rejection.
-- [ ] 2.6 Implement tool and provider schemas that normalize only the documented fields and reject unsupported external data.
-- [ ] 2.7 Define stable internal error categories and add failing tests for their HTTP status/error-code mapping and sanitized public serialization.
-- [ ] 2.8 Implement the smallest typed error mapper that passes all mapping and redaction tests.
-- [ ] 2.9 Refactor shared schema and error utilities while the complete contract suite remains green.
+- [x] 2.1 Add failing tests for topic trimming, empty topics, the 300-character limit, optional session IDs, generated-session behavior, and request-body shape.
+- [x] 2.2 Implement the request schema and normalization helpers needed to pass the request-contract tests.
+- [x] 2.3 Add failing tests for the structured research response: normalized topic, session ID, brief, source list, uncertainty fields, run ID, and 500-word maximum.
+- [x] 2.4 Implement the response and model-output schemas without TypeScript assertion-based acceptance, including a typed invalid-output result.
+- [x] 2.5 Add failing schema tests for bounded search queries/results and single-URL page-reader input/output, including provider payload rejection.
+- [x] 2.6 Implement tool and provider schemas that normalize only the documented fields and reject unsupported external data.
+- [x] 2.7 Define stable internal error categories and add failing tests for their HTTP status/error-code mapping and sanitized public serialization.
+- [x] 2.8 Implement the smallest typed error mapper that passes all mapping and redaction tests.
+- [x] 2.9 Refactor shared schema and error utilities while the complete contract suite remains green.
 
 ### Exit criteria
 

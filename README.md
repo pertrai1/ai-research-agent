@@ -1,8 +1,9 @@
 # AI Research Agent
 
-Read-only autonomous web research agent. The current Phase 1 baseline provides
-the project toolchain and a validated startup configuration boundary; it does
-not yet expose research endpoints or provider integrations.
+Read-only autonomous web research agent. Phase 2 adds validated contracts for
+research requests and responses, model output, future search/page-reader tool
+I/O, provider payloads, and sanitized public errors. The project does not yet
+expose research endpoints or provider integrations.
 
 ## Requirements
 
