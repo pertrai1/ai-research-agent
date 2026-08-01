@@ -8,3 +8,14 @@
 - **Impact:** Direct fake-provider tests cannot exercise the complete `createAgentFromFile` → `ReActAgent` path without using lifecycle hooks or patching the provider module. Runtime provider construction remains framework-controlled.
 - **Workaround:** Use `beforeModelCall` lifecycle hooks for deterministic response injection in tests, and keep the production adapter on the documented factory path.
 - **Status:** Open; integration test coverage added in Phase 5 should be revisited if the package adds provider injection.
+
+## 2026-08-01
+
+### `@cadmusgroup-llc/cg-agent-flow-observability` 0.17.1: tracing hook type mismatch
+
+- **Issue:** `createTracingHooks()` exposes callback parameter types from the observability package that are not assignable to the core package's exported `LifecycleHooks` under TypeScript `strict` mode with `exactOptionalPropertyTypes`; the optional `modelConfig` property differs in optionality and the message types are not identical.
+- **Expected behavior:** The public tracing-hook return type should be assignable to `Partial<LifecycleHooks>` accepted by `BaseAgent.registerHooks`.
+- **Evidence:** `npm run typecheck` failed when the showcase profile declared `hooks: Partial<LifecycleHooks>` and assigned `createTracingHooks({ tracer })`; the failure points to `beforeModelCall` and `modelConfig` optionality in package declarations.
+- **Impact:** Consumers cannot type the factory-produced tracing hooks as core lifecycle hooks without an adapter boundary, despite the runtime hooks being compatible.
+- **Workaround:** Keep the showcase profile's `hooks` property typed as `ReturnType<typeof createTracingHooks>` and pass it at the adapter boundary; do not widen production service types.
+- **Status:** Open upstream discrepancy; workaround covered by the deterministic showcase typecheck/test.

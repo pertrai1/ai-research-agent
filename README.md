@@ -1,5 +1,9 @@
 # AI Research Agent
 
+<p align="center">
+  <img src="./avatar.png" alt="AI Research Agent avatar" width="180">
+</p>
+
 Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
 injected, bounded `web_search` and `read_page` capabilities with validated
 results, SSRF-resistant URL handling, timeout and retry controls, bounded text
@@ -54,6 +58,30 @@ accepted only when its URL appears in that run's observed-URL ledger. Invalid
 structured output receives one repair attempt before returning the typed
 `INVALID_AGENT_OUTPUT` failure. Retrieved page text remains explicitly
 untrusted evidence and is never treated as instructions.
+
+### Optional framework showcase
+
+The optional showcase demonstrates three CG AgentFlow capabilities without
+changing the production service:
+
+- deterministic YAML-backed prompt-injection, secret-redaction, and output-
+  validation guardrails;
+- an opt-in in-memory tracing profile that records only bounded, allow-listed
+  span metadata; and
+- a deterministic evaluation harness using fake agents, framework evaluators,
+  project-specific grounding checks, and regression detection.
+
+Run the showcase offline with:
+
+```sh
+npx vitest run test/framework-showcase.test.ts
+```
+
+The showcase agent uses the same two read-only tools as production, while the
+production agent remains on its existing configuration. No live provider,
+network exporter, HTTP route, framework retry, or persistent report is enabled
+by default. Keep application-level source grounding, citation validation,
+redaction, and service telemetry authoritative.
 
 The default test suite uses deterministic transports and AgentFlow lifecycle
 hooks; it makes no Anthropic or Tavily calls. HTTP service tests use in-process
@@ -231,7 +259,8 @@ similarly named public packages.
 
 ## Delivery status
 
-Phases 1–7 are complete. Phase 7 was verified with 56 deterministic tests,
+Phases 1–7 and the optional framework showcase are complete. The repository was
+verified with 63 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, and a
 production build. The current roadmap ends at the non-production service
 scope; container deployment, hosting, and release acceptance are out of scope.
