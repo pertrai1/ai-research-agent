@@ -1,7 +1,7 @@
 # AI Research Agent
 
 <p align="center">
-  <img src="./avatar.png" alt="AI Research Agent avatar">
+  <img src="./avatar.png" alt="AI Research Agent avatar" width="480">
 </p>
 
 Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
