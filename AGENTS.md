@@ -1,5 +1,7 @@
 # AI Research Agent
 
+**Important**: during any CG AgentFlow implementation work, if you confirm a package bug, missing feature, or install/runtime incompatibility, add a dated entry to `docs/agent-flow-findings.md`. Each entry should include the package name and version, the issue, expected behavior, evidence, impact, workaround, and status. Deduplicate repeated findings and update existing entries as new evidence appears.
+
 ## Five non-negotiables
 
 - Surface assumptions before building. Wrong assumptions held silently are the most common failure mode.
