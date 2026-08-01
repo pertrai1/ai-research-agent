@@ -1,9 +1,5 @@
 # AI Research Agent
 
-<p align="center">
-  <img src="./avatar.png" alt="AI Research Agent avatar" width="480">
-</p>
-
 Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
 injected, bounded `web_search` and `read_page` capabilities with validated
 results, SSRF-resistant URL handling, timeout and retry controls, bounded text
