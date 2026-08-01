@@ -2,7 +2,7 @@
 
 ## Purpose and authority
 
-This roadmap turns [`REQUIREMENTS.md`](./REQUIREMENTS.md) into an ordered implementation plan for the initial AI research agent release. `REQUIREMENTS.md` remains the authoritative product contract: this file tracks delivery but does not replace, weaken, or expand those requirements. Any scope change must be reconciled with the requirements first.
+This roadmap turns [`REQUIREMENTS.md`](./REQUIREMENTS.md) into an ordered implementation plan for the initial non-production AI research agent service. `REQUIREMENTS.md` remains the authoritative product contract: this file tracks delivery but does not replace, weaken, or expand those requirements. Deployment and release work is outside this roadmap and requires an explicit future plan. Any scope change must be reconciled with the requirements first.
 
 Application, test, infrastructure, and deployment tasks below are checked as
 their phase evidence is completed. An unchecked task is not implemented, and a
@@ -27,7 +27,6 @@ phase is not complete until every task and exit criterion passes.
 | 5. Research agent and grounding          | Restricted ReAct agent producing source-grounded structured briefs | Phases 3–4 |
 | 6. Memory and HTTP service               | Isolated sessions and complete HTTP API behavior                   | Phase 5    |
 | 7. Production controls and observability | Authenticated, bounded, diagnosable service                        | Phase 6    |
-| 8. Deployment, evaluation, and release   | Reproducible container deployment and acceptance evidence          | Phase 7    |
 
 ## Phase 1: Project foundations
 
@@ -249,51 +248,19 @@ CostGuard enforcement, request deadline/cancellation coverage, sanitized
 AgentFlow lifecycle telemetry, metrics, formatting, linting, type checking, and
 a production build. No live provider calls are made by the default suite.
 
-Phase 8 is now the next incomplete phase; deployment, evaluation, and release
-work must not begin until its scope is explicitly taken up.
-
 ### Exit criteria
 
 - Unauthenticated, oversized, excessive-rate, and excess-concurrency requests are rejected with stable responses.
 - Tests demonstrate hard iteration/token/tool-output controls, request budget enforcement, total deadlines, bounded retries, and cancellation.
 - Required logs, traces, and metrics are emitted with correlation while secret and sensitive-content leak tests pass.
 
-## Phase 8: Container deployment, evaluation, and release
-
-**Outcome:** A non-root container can be deployed reproducibly, evaluated against adversarial and quality scenarios, smoke-tested, and rolled back.
-
-**Depends on:** Phase 7.
-
-**Requirements:** FR-6, SEC-2, SEC-4, SEC-5, §9, §10.1, §10.2, §11.4, §12, §15, AC-1–AC-12.
-
-### Tasks
-
-- [ ] 8.1 Add container inspection tests for a multi-stage Node.js 24 build, lockfile installation, non-root runtime, production-only artifacts, configurable `PORT`, and health-check support.
-- [ ] 8.2 Implement the Dockerfile using a BuildKit package-token secret so no credential-bearing `.npmrc` or token survives in an image layer.
-- [ ] 8.3 Add `.dockerignore` coverage for `.env`, `.git`, dependencies, tests/coverage output, and unrelated development artifacts, then verify the build context excludes them.
-- [ ] 8.4 Build the image locally, inspect its user and layers for credential leakage, and run authenticated health and deterministic research smoke tests.
-- [ ] 8.5 Configure Railway or a comparable container host with environment secrets, health path, authentication, rate limits, and an appropriate shared persistent `MemoryStore` for multi-replica or restart durability.
-- [ ] 8.6 Document local/deployed build and start commands, required variables, memory-store selection, public controls, smoke checks, and rollback procedure.
-- [ ] 8.7 Create evaluation fixtures for current events, technical primary sources, disagreement, insufficient/inaccessible evidence, low-quality results, prompt injection, fabricated citations, and same-session follow-up.
-- [ ] 8.8 Implement scoring for source validity, claim support, completeness, uncertainty calibration, 500-word compliance, tool efficiency, latency, and cost.
-- [ ] 8.9 Run the complete unit, agent, API/integration, security, and evaluation suites through supported repository commands and resolve every failure.
-- [ ] 8.10 Run a live-provider acceptance check demonstrating Tavily search plus selected page reads with only tool-observed source URLs in the response.
-- [ ] 8.11 Run deployed authenticated health and research smoke tests with secrets supplied only by the hosting platform and record rollback-ready release evidence.
-- [ ] 8.12 Review and record evidence for every acceptance criterion before declaring the initial release complete.
-
-### Exit criteria
-
-- The final image runs as non-root, contains no build credential, uses `PORT`, and passes local authenticated smoke tests.
-- The deployed instance passes authenticated health/research smoke tests with platform-managed secrets and the documented persistence model.
-- All supported test suites and evaluation gates pass, and evidence exists for AC-1 through AC-12.
-
 ## Requirement coverage matrix
 
 | Requirement                          | Primary phase(s) |
 | ------------------------------------ | ---------------- |
-| §4 Framework and runtime             | 1, 2, 5, 7, 8    |
+| §4 Framework and runtime             | 1, 2, 5, 7       |
 | §4.1 Required stack                  | 1, 2, 5          |
-| §4.2 Package registry authentication | 1, 8             |
+| §4.2 Package registry authentication | 1                |
 | §4.3 ReAct configuration             | 2, 5, 7          |
 | §5 Functional requirements           | 2–6              |
 | FR-1 Research request                | 2, 6             |
@@ -301,44 +268,44 @@ work must not begin until its scope is explicitly taken up.
 | FR-3 Web search                      | 2, 3             |
 | FR-4 Page reading                    | 2, 4             |
 | FR-5 Source grounding                | 5, 6             |
-| FR-6 Conversation memory             | 6, 8             |
-| FR-7 Health endpoints                | 6, 8             |
+| FR-6 Conversation memory             | 6                |
+| FR-7 Health endpoints                | 6                |
 | FR-8 Error responses                 | 2, 6             |
 | §6 Agent behavior                    | 5                |
-| §7 Security requirements             | 1, 3–5, 7, 8     |
+| §7 Security requirements             | 1, 3–5, 7        |
 | SEC-1 Read-only capability boundary  | 3, 5             |
-| SEC-2 SSRF protection                | 4, 8             |
+| SEC-2 SSRF protection                | 4                |
 | SEC-3 Prompt-injection resistance    | 4, 5             |
-| SEC-4 Secrets                        | 1, 3, 4, 7, 8    |
-| SEC-5 Public API controls            | 7, 8             |
+| SEC-4 Secrets                        | 1, 3, 4, 7       |
+| SEC-5 Public API controls            | 7                |
 | §8 Reliability and cost controls     | 2–5, 7           |
-| §9 Observability                     | 3–5, 7, 8        |
-| §10 Deployment requirements          | 1, 8             |
-| §10.1 Container                      | 1, 8             |
-| §10.2 Railway or equivalent host     | 8                |
-| §11 TDD mandate                      | 1–8              |
+| §9 Observability                     | 3–5, 7           |
+| §10 Deployment requirements          | Out of scope     |
+| §10.1 Container                      | Out of scope     |
+| §10.2 Railway or equivalent host     | Out of scope     |
+| §11 TDD mandate                      | 1–7              |
 | §11.1 Unit tests                     | 2–5              |
 | §11.2 Agent tests                    | 5–7              |
 | §11.3 API and integration tests      | 6–7              |
-| §11.4 Evaluation scenarios           | 8                |
+| §11.4 Evaluation scenarios           | Out of scope     |
 
 ## Acceptance criteria coverage
 
 | Criterion                                                      | Evidence-producing phase(s) |
 | -------------------------------------------------------------- | --------------------------- |
-| AC-1 Structured research request and response                  | 6, 8                        |
-| AC-2 Live Tavily search and selected page reads                | 3–5, 8                      |
-| AC-3 Returned URLs observed in run or relevant stored evidence | 5, 6, 8                     |
-| AC-4 Brief length and uncertainty/disagreement                 | 2, 5, 8                     |
-| AC-5 Follow-up context and session isolation                   | 6, 8                        |
-| AC-6 Iteration, time, token, tool-output, and cost bounds      | 5, 7, 8                     |
-| AC-7 Complete SSRF test classes                                | 4, 8                        |
-| AC-8 Prompt-injection containment                              | 4, 5, 8                     |
-| AC-9 No-LLM health and readiness                               | 6, 8                        |
-| AC-10 All test and evaluation suites pass                      | 1–8                         |
-| AC-11 Non-root container and local smoke test                  | 8                           |
-| AC-12 Deployed authenticated smoke tests with platform secrets | 8                           |
+| AC-1 Structured research request and response                  | 6                           |
+| AC-2 Live Tavily search and selected page reads                | 3–5                         |
+| AC-3 Returned URLs observed in run or relevant stored evidence | 5, 6                        |
+| AC-4 Brief length and uncertainty/disagreement                 | 2, 5                        |
+| AC-5 Follow-up context and session isolation                   | 6                           |
+| AC-6 Iteration, time, token, tool-output, and cost bounds      | 5, 7                        |
+| AC-7 Complete SSRF test classes                                | 4                           |
+| AC-8 Prompt-injection containment                              | 4, 5                        |
+| AC-9 No-LLM health and readiness                               | 6                           |
+| AC-10 All test and evaluation suites pass                      | 1–7                         |
+| AC-11 Non-root container and local smoke test                  | Out of scope                |
+| AC-12 Deployed authenticated smoke tests with platform secrets | Out of scope                |
 
 ## Release rule
 
-The initial release is complete only when every roadmap phase is complete, every phase exit criterion passes, and recorded evidence satisfies all twelve acceptance criteria. If this roadmap and `REQUIREMENTS.md` conflict, `REQUIREMENTS.md` wins and the roadmap must be corrected.
+The current non-production service scope is complete when Phases 1–7 are complete, their exit criteria pass, and the in-scope acceptance criteria are satisfied. Container deployment, hosting, and release acceptance remain outside this roadmap. If this roadmap and `REQUIREMENTS.md` conflict, `REQUIREMENTS.md` wins and the roadmap must be corrected.

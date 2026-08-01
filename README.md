@@ -233,7 +233,8 @@ similarly named public packages.
 
 Phases 1–7 are complete. Phase 7 was verified with 56 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, and a
-production build. Phase 8 is the next implementation phase and covers
-container deployment, evaluation, and release evidence. See
+production build. The current roadmap ends at the non-production service
+scope; container deployment, hosting, and release acceptance are out of scope.
+See
 [`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
 exit criteria.
