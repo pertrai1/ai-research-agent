@@ -78,8 +78,19 @@ its token only from `NODE_AUTH_TOKEN`. Do not add credentials to `.npmrc`,
 configuration instead.
 
 The application reads configuration from the process environment. It does not
-automatically load `.env`; if you use a `.env` file, load it into your shell or
-export the variables explicitly before starting the service.
+automatically load `.env`, so load the ignored local file into your shell before
+starting the service:
+
+```sh
+cp .env.example .env
+# Edit .env and replace both placeholder values with your own keys.
+set -a
+. ./.env
+set +a
+```
+
+Never commit `.env` or replace the placeholders in `.env.example` with real
+credentials.
 
 ## Testing the agent
 
@@ -102,11 +113,9 @@ Tavily.
 ### 2. Start the service with provider credentials
 
 You need both an Anthropic key and a Tavily key for a real research request.
-Enter them without putting the values in the command history:
+After loading `.env` as shown above, start the service:
 
 ```sh
-read -rs ANTHROPIC_API_KEY; export ANTHROPIC_API_KEY
-read -rs TAVILY_API_KEY; export TAVILY_API_KEY
 npm run build
 NODE_ENV=production PORT=3000 npm start
 ```
