@@ -123,17 +123,28 @@ incomplete roadmap work is Phase 4.
 
 **Requirements:** FR-4, SEC-2, SEC-3, SEC-4, §8, §9, §11.1, AC-7, AC-8.
 
+**Status:** Complete on 2026-08-01. Verified with deterministic SSRF policy,
+redirect, bounded transport, textual extraction, prompt-injection delimiter,
+telemetry, formatting, linting, type checking, tests, production build, and
+strict OpenSpec validation.
+
+The reader resolves and revalidates destinations through injected DNS and
+fetch boundaries. Connection-time address pinning is not exposed by the
+standard fetch seam; production deployment must retain outbound network policy
+as defense in depth, and any stronger socket-level pinning belongs in a later
+hardening change.
+
 ### Tasks
 
-- [ ] 4.1 Add failing URL-policy tests for credentials, non-HTTP schemes, malformed hosts, loopback, private, link-local, multicast, reserved, IPv4-mapped IPv6, IPv6, and cloud metadata destinations.
-- [ ] 4.2 Implement hostname resolution and address classification that passes every prohibited-destination test without relying on string-only IP checks.
-- [ ] 4.3 Add failing fetch tests for DNS rebinding defenses where supported, per-redirect destination revalidation, redirect limits, timeouts, response-size limits, and cancellation.
-- [ ] 4.4 Implement an injected page transport that validates the initial and redirected destinations and returns typed, sanitized retrieval failures.
-- [ ] 4.5 Add failing parsing tests for supported textual content types, rejected binary content, HTML readability extraction, title/canonical URL fields, script/style removal, and character truncation.
-- [ ] 4.6 Implement bounded content handling and readable-text extraction that passes the parser suite before content reaches the model.
-- [ ] 4.7 Add failing prompt-injection fixture tests and implement explicit untrusted-content delimiters plus instructions that prohibit following retrieved commands or disclosing secrets.
-- [ ] 4.8 Emit sanitized page-read telemetry containing duration, outcome, and destination hostname but not full URLs with sensitive data or complete page text.
-- [ ] 4.9 Refactor URL policy, transport, and extraction boundaries while all SSRF and content tests remain green.
+- [x] 4.1 Add failing URL-policy tests for credentials, non-HTTP schemes, malformed hosts, loopback, private, link-local, multicast, reserved, IPv4-mapped IPv6, IPv6, and cloud metadata destinations.
+- [x] 4.2 Implement hostname resolution and address classification that passes every prohibited-destination test without relying on string-only IP checks.
+- [x] 4.3 Add failing fetch tests for DNS rebinding defenses where supported, per-redirect destination revalidation, redirect limits, timeouts, response-size limits, and cancellation.
+- [x] 4.4 Implement an injected page transport that validates the initial and redirected destinations and returns typed, sanitized retrieval failures.
+- [x] 4.5 Add failing parsing tests for supported textual content types, rejected binary content, HTML readability extraction, title/canonical URL fields, script/style removal, and character truncation.
+- [x] 4.6 Implement bounded content handling and readable-text extraction that passes the parser suite before content reaches the model.
+- [x] 4.7 Add failing prompt-injection fixture tests and implement explicit untrusted-content delimiters plus instructions that prohibit following retrieved commands or disclosing secrets.
+- [x] 4.8 Emit sanitized page-read telemetry containing duration, outcome, and destination hostname but not full URLs with sensitive data or complete page text.
+- [x] 4.9 Refactor URL policy, transport, and extraction boundaries while all SSRF and content tests remain green.
 
 ### Exit criteria
 

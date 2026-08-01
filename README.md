@@ -1,9 +1,29 @@
 # AI Research Agent
 
-Read-only autonomous web research agent. Phase 3 adds a dependency-injected,
-bounded Tavily `web_search` capability with validated results, timeout and
-transient-only retry controls, and privacy-safe telemetry. The project does not
-yet expose research endpoints, agent assembly, or page reading.
+Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
+injected, bounded `web_search` and `read_page` capabilities with validated
+results, SSRF-resistant URL handling, timeout and retry controls, bounded text
+extraction, untrusted-content delimiters, and privacy-safe telemetry. The
+project does not yet expose research endpoints or agent assembly; those are
+planned for later roadmap phases.
+
+## Implemented capabilities
+
+`web_search` sends bounded Tavily searches using the runtime API key, returns at
+most five normalized results, retries only transient failures, and never places
+credentials in tool output or telemetry.
+
+`read_page` accepts one credential-free public HTTP(S) URL. It resolves and
+classifies destinations, rejects private and reserved IPv4/IPv6 networks and
+cloud metadata addresses, revalidates every redirect, and enforces redirect,
+timeout, cancellation, and response-size limits. Supported HTML and text
+responses are reduced to bounded readable text; scripts, styles, and raw markup
+are removed. Retrieved text is explicitly marked as untrusted evidence, so
+page instructions are not treated as agent instructions.
+
+Both capabilities are currently library-level tools with injected transports.
+They are not public HTTP endpoints and are not yet registered with a CG
+AgentFlow agent.
 
 ## Requirements
 
@@ -58,3 +78,10 @@ for this private package family. Before Phase 5, add an integration test that
 covers the installed `createAgentFromFile` factory API and resolves any
 documentation/package discrepancy. Do not replace these packages with
 similarly named public packages.
+
+## Delivery status
+
+Phases 1–4 are complete. Phase 5 will assemble the YAML-defined CG AgentFlow
+ReAct agent and register only `web_search` and `read_page`; Phase 6 will add the
+HTTP service and session memory. See [`ROADMAP.md`](./ROADMAP.md) for the
+authoritative implementation sequence and exit criteria.
