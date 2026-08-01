@@ -16,16 +16,16 @@ All application, test, infrastructure, and deployment tasks below begin unchecke
 
 ## Phase overview
 
-| Phase | Outcome | Depends on |
-|---|---|---|
-| 1. Project foundations | Reproducible, secret-safe TypeScript development and CI baseline | None |
-| 2. Contracts and configuration | Validated external boundaries and typed failure vocabulary | Phase 1 |
-| 3. Web search tool | Bounded, validated Tavily search capability | Phase 2 |
-| 4. Safe page reader | SSRF-resistant textual page retrieval | Phase 2 |
-| 5. Research agent and grounding | Restricted ReAct agent producing source-grounded structured briefs | Phases 3–4 |
-| 6. Memory and HTTP service | Isolated sessions and complete HTTP API behavior | Phase 5 |
-| 7. Production controls and observability | Authenticated, bounded, diagnosable service | Phase 6 |
-| 8. Deployment, evaluation, and release | Reproducible container deployment and acceptance evidence | Phase 7 |
+| Phase                                    | Outcome                                                            | Depends on |
+| ---------------------------------------- | ------------------------------------------------------------------ | ---------- |
+| 1. Project foundations                   | Reproducible, secret-safe TypeScript development and CI baseline   | None       |
+| 2. Contracts and configuration           | Validated external boundaries and typed failure vocabulary         | Phase 1    |
+| 3. Web search tool                       | Bounded, validated Tavily search capability                        | Phase 2    |
+| 4. Safe page reader                      | SSRF-resistant textual page retrieval                              | Phase 2    |
+| 5. Research agent and grounding          | Restricted ReAct agent producing source-grounded structured briefs | Phases 3–4 |
+| 6. Memory and HTTP service               | Isolated sessions and complete HTTP API behavior                   | Phase 5    |
+| 7. Production controls and observability | Authenticated, bounded, diagnosable service                        | Phase 6    |
+| 8. Deployment, evaluation, and release   | Reproducible container deployment and acceptance evidence          | Phase 7    |
 
 ## Phase 1: Project foundations
 
@@ -37,7 +37,7 @@ All application, test, infrastructure, and deployment tasks below begin unchecke
 
 ### Tasks
 
-- [ ] 1.1 Pin Node.js 24 and npm 9+ expectations and create TypeScript build, lint, test, and start commands that succeed on a minimal service entry point.
+- [ ] 1.1 Pin Node.js 24 and npm 9+ expectations and create TypeScript 7 build, prettier/eslint/eslint-plugin-llm-core lint and formatting, vitest test, and start commands that succeed on a minimal service entry point.
 - [ ] 1.2 Add a token-free GitHub Packages configuration for the `@cadmusgroup-llc` scope and document local `read:packages` authentication without storing a literal token.
 - [ ] 1.3 Add ignore rules for credential-bearing local npm configuration, `.env` files, dependencies, build output, test output, and coverage.
 - [ ] 1.4 Add environment parsing tests that fail for missing or malformed required values and verify error output contains no secret values.
@@ -238,55 +238,55 @@ All application, test, infrastructure, and deployment tasks below begin unchecke
 
 ## Requirement coverage matrix
 
-| Requirement | Primary phase(s) |
-|---|---|
-| §4 Framework and runtime | 1, 2, 5, 7, 8 |
-| §4.1 Required stack | 1, 2, 5 |
-| §4.2 Package registry authentication | 1, 8 |
-| §4.3 ReAct configuration | 2, 5, 7 |
-| §5 Functional requirements | 2–6 |
-| FR-1 Research request | 2, 6 |
-| FR-2 Research response | 2, 5, 6 |
-| FR-3 Web search | 2, 3 |
-| FR-4 Page reading | 2, 4 |
-| FR-5 Source grounding | 5, 6 |
-| FR-6 Conversation memory | 6, 8 |
-| FR-7 Health endpoints | 6, 8 |
-| FR-8 Error responses | 2, 6 |
-| §6 Agent behavior | 5 |
-| §7 Security requirements | 1, 3–5, 7, 8 |
-| SEC-1 Read-only capability boundary | 3, 5 |
-| SEC-2 SSRF protection | 4, 8 |
-| SEC-3 Prompt-injection resistance | 4, 5 |
-| SEC-4 Secrets | 1, 3, 4, 7, 8 |
-| SEC-5 Public API controls | 7, 8 |
-| §8 Reliability and cost controls | 2–5, 7 |
-| §9 Observability | 3–5, 7, 8 |
-| §10 Deployment requirements | 1, 8 |
-| §10.1 Container | 1, 8 |
-| §10.2 Railway or equivalent host | 8 |
-| §11 TDD mandate | 1–8 |
-| §11.1 Unit tests | 2–5 |
-| §11.2 Agent tests | 5–7 |
-| §11.3 API and integration tests | 6–7 |
-| §11.4 Evaluation scenarios | 8 |
+| Requirement                          | Primary phase(s) |
+| ------------------------------------ | ---------------- |
+| §4 Framework and runtime             | 1, 2, 5, 7, 8    |
+| §4.1 Required stack                  | 1, 2, 5          |
+| §4.2 Package registry authentication | 1, 8             |
+| §4.3 ReAct configuration             | 2, 5, 7          |
+| §5 Functional requirements           | 2–6              |
+| FR-1 Research request                | 2, 6             |
+| FR-2 Research response               | 2, 5, 6          |
+| FR-3 Web search                      | 2, 3             |
+| FR-4 Page reading                    | 2, 4             |
+| FR-5 Source grounding                | 5, 6             |
+| FR-6 Conversation memory             | 6, 8             |
+| FR-7 Health endpoints                | 6, 8             |
+| FR-8 Error responses                 | 2, 6             |
+| §6 Agent behavior                    | 5                |
+| §7 Security requirements             | 1, 3–5, 7, 8     |
+| SEC-1 Read-only capability boundary  | 3, 5             |
+| SEC-2 SSRF protection                | 4, 8             |
+| SEC-3 Prompt-injection resistance    | 4, 5             |
+| SEC-4 Secrets                        | 1, 3, 4, 7, 8    |
+| SEC-5 Public API controls            | 7, 8             |
+| §8 Reliability and cost controls     | 2–5, 7           |
+| §9 Observability                     | 3–5, 7, 8        |
+| §10 Deployment requirements          | 1, 8             |
+| §10.1 Container                      | 1, 8             |
+| §10.2 Railway or equivalent host     | 8                |
+| §11 TDD mandate                      | 1–8              |
+| §11.1 Unit tests                     | 2–5              |
+| §11.2 Agent tests                    | 5–7              |
+| §11.3 API and integration tests      | 6–7              |
+| §11.4 Evaluation scenarios           | 8                |
 
 ## Acceptance criteria coverage
 
-| Criterion | Evidence-producing phase(s) |
-|---|---|
-| AC-1 Structured research request and response | 6, 8 |
-| AC-2 Live Tavily search and selected page reads | 3–5, 8 |
-| AC-3 Returned URLs observed in run or relevant stored evidence | 5, 6, 8 |
-| AC-4 Brief length and uncertainty/disagreement | 2, 5, 8 |
-| AC-5 Follow-up context and session isolation | 6, 8 |
-| AC-6 Iteration, time, token, tool-output, and cost bounds | 5, 7, 8 |
-| AC-7 Complete SSRF test classes | 4, 8 |
-| AC-8 Prompt-injection containment | 4, 5, 8 |
-| AC-9 No-LLM health and readiness | 6, 8 |
-| AC-10 All test and evaluation suites pass | 1–8 |
-| AC-11 Non-root container and local smoke test | 8 |
-| AC-12 Deployed authenticated smoke tests with platform secrets | 8 |
+| Criterion                                                      | Evidence-producing phase(s) |
+| -------------------------------------------------------------- | --------------------------- |
+| AC-1 Structured research request and response                  | 6, 8                        |
+| AC-2 Live Tavily search and selected page reads                | 3–5, 8                      |
+| AC-3 Returned URLs observed in run or relevant stored evidence | 5, 6, 8                     |
+| AC-4 Brief length and uncertainty/disagreement                 | 2, 5, 8                     |
+| AC-5 Follow-up context and session isolation                   | 6, 8                        |
+| AC-6 Iteration, time, token, tool-output, and cost bounds      | 5, 7, 8                     |
+| AC-7 Complete SSRF test classes                                | 4, 8                        |
+| AC-8 Prompt-injection containment                              | 4, 5, 8                     |
+| AC-9 No-LLM health and readiness                               | 6, 8                        |
+| AC-10 All test and evaluation suites pass                      | 1–8                         |
+| AC-11 Non-root container and local smoke test                  | 8                           |
+| AC-12 Deployed authenticated smoke tests with platform secrets | 8                           |
 
 ## Release rule
 

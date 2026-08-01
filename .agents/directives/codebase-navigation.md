@@ -1,0 +1,327 @@
+---
+name: codebase-navigation
+description: Guides progressive codebase orientation with the SAFE pattern before implementation, review, or unfamiliar work.
+version: 1.1.2
+required: true
+category: workflow
+tools:
+  - claude
+  - copilot
+  - codex
+  - cursor
+triggers:
+  - orientation
+  - unfamiliar-codebase
+  - multi-step-work
+routing:
+  load: conditional
+---
+
+# Codebase Navigation Directive
+
+**When to load:** Load this directive for unfamiliar codebases or new multi-task sessions unless adaptive routing determines the task is purely conversational, docs-only, or the agent is already oriented.
+
+This directive governs how the agent explores and reads the codebase before
+starting repo-based implementation or review work. Adaptive routing may skip it
+for purely conversational, docs-only, or already-oriented tasks.
+
+**Do not skip orientation.** Starting work without surveying the codebase produces
+code that doesn't fit existing patterns, duplicates logic, or breaks imports.
+
+---
+
+## S — Survey
+
+**Goal:** Understand where things live and how the project is organized.
+**Token budget:** ~2,000 tokens maximum.
+
+Read these **in order**. Stop as soon as you have enough orientation for the task.
+
+```
+1. Project-level instructions (AGENTS.md, CLAUDE.md, or equivalent)
+   → project WHY, WHAT, HOW, workflow
+2. tree -L 2 -I node_modules (or equivalent)
+   → directory structure
+   - Do NOT recurse deeply — flat or depth-2 only.
+     Deep listings exceed the Survey token budget on larger repos.
+3. The project's entry point — main export file, router, or public API surface
+   → what's exported, what's public
+4. Build/test/lint commands (package.json scripts, Makefile, or equivalent)
+```
+
+**Do NOT read at this stage:**
+
+- Full implementation files
+- Test file bodies
+- Long config files
+- Dependency directories (node_modules, vendor, etc.)
+
+**What you should know after Survey:**
+
+- Where the relevant source files live
+- What the public API surface looks like
+- How to build, test, and lint
+
+---
+
+## A — Anchor
+
+**Goal:** Load the constraints that most strongly determine correct output.
+**Token budget:** ~3,000 tokens maximum.
+
+Anchor on **types and contracts**, not implementations.
+
+```
+1. Type definitions for the area you're working in
+   - Type imports in the relevant source files (just the imports, first ~20 lines)
+   - Co-located type definitions or dedicated types files
+
+2. Test file NAMES for the area (not bodies)
+   - grep "describe\|it(" tests/path/to/area-test.ts | head -30
+   - Test names are specifications — they tell you what behavior exists
+
+3. Existing capability search
+   - Search for existing utilities, helpers, services, validators, hooks,
+     commands, or types that already solve this problem
+   - Reuse existing behavior when it represents the same project knowledge
+   - Do not consolidate merely similar code if it represents different domain
+     concepts or would expand the scope budget
+
+4. ONE reference file showing the existing pattern
+   - Pick the most similar existing file to what you're working on
+   - Read its exports and public interface only (skip full body)
+
+5. Applicable directives and scoped instructions
+   - Load any project-level directives or scoped instructions that apply
+```
+
+**Prefer:**
+
+```bash
+# High-information, low-token reads
+head -25 path/to/representative-file.ts          # imports + exports
+grep "key-pattern" path/to/representative-file.ts -A 20  # relevant metadata
+grep "describe\|it(" tests/path/to/test-file.ts  # test specifications
+
+# Existing capability search: prefer AST-aware search when available
+ast-grep --pattern 'export function $NAME($$$ARGS) { $$$BODY }' path/to/source/root
+ast-grep --pattern 'export const $NAME = $$$VALUE' path/to/source/root
+
+# Grep fallback when ast-grep is unavailable; choose the project's source roots
+grep -R -E "function .*<domain-term>|const .*<domain-term>|export .*<domain-term>" path/to/source/root path/to/tests | head -30
+```
+
+**If your agent framework provides dedicated read/search tools** (e.g. Read
+with line ranges, Grep, or Glob), prefer those over raw shell commands — they
+are typically optimized for the agent's context management.
+
+**Prefer symbol-aware navigation when available.** In large or multi-language
+codebases, use LSP/language-server/IDE symbol tools for go-to-definition,
+find-references, call hierarchy, or diagnostics before broad text search. Plain
+text search is still useful for unknown terms, but verify symbol identity before
+editing when multiple packages, languages, generated files, or same-named
+functions/classes may match. If no LSP/symbol tool is configured, state the
+fallback and use imports, call sites, and narrow file slices to disambiguate.
+
+**Avoid:**
+
+```bash
+# Low-information, high-token reads
+cat path/to/source-file.ts               # entire file — wastes context
+cat tests/path/to/test-file.ts           # entire test file — wastes context
+```
+
+---
+
+## F — Filter
+
+**Goal:** Narrow to exactly the files your task touches.
+**Token budget:** ~2,000-5,000 tokens (task-dependent).
+
+Only now read the specific files you'll modify or that your changes depend on.
+
+Escalate reads from narrow to broad:
+
+1. File names and symbols
+2. Imports, exports, signatures, and frontmatter/metadata
+3. Test names, failing output, and documented examples
+4. Relevant function, section, or directive slices
+5. Whole files only when slices cannot answer the question
+
+Do not read sibling implementations merely for familiarity. The Anchor phase's
+allowance to read **ONE reference file** is a narrow exception to the Filter
+phase rule: use one representative reference file only when it directly informs
+the target change, not as general look-and-copy context.
+
+```
+1. Find dependents:
+   grep -rl "from.*my-module" src/ | head -10
+
+2. Find what the target file imports:
+   head -30 path/to/target-file.ts  # just the import block
+
+3. Read the specific functions/types you need to change or extend
+   - Use line-offset reads, not cat
+   - Skim for structure, skip internal helpers you won't touch
+```
+
+**The dependency check prevents:**
+
+- Breaking imports in files you didn't know depended on yours
+- Duplicating logic that already exists elsewhere
+- Missing required changes to consumer code
+
+### Optional tool-assisted architecture check
+
+If the task may change imports, exports, packages, services, shared code, or
+folder boundaries, load `.agents/directives/architecture-boundaries.md` before Execute.
+
+For TypeScript/JavaScript projects with Fallow available, use targeted checks
+when they answer boundary questions faster than manual search:
+
+```bash
+npx fallow list --boundaries
+npx fallow dead-code --boundary-violations
+npx fallow dead-code --circular-deps
+```
+
+If GitNexus is available, use the existing local CLI/MCP graph context to
+identify dependents, clusters, services, and execution flows before making
+cross-cutting changes. Run it directly, for example with `npx gitnexus ...`; do
+not install GitNexus skills or update agent instruction files just to use it.
+
+---
+
+## E — Execute
+
+**Goal:** Begin the standard implementation workflow with high-information context.
+
+By this point entropy is reduced enough that first-try correctness should be
+70-85%. Proceed with your project's implementation workflow.
+
+---
+
+## Context Discipline Rules
+
+These rules prevent context rot during long sessions.
+
+### 1. Read by Slice, Not by File
+
+```bash
+# Good — reads what you need
+head -30 path/to/file.ts                    # imports + signature
+sed -n '45,80p' path/to/file.ts             # specific section
+
+# Bad — floods context
+cat path/to/file.ts                         # entire 200-line file
+```
+
+### 2. Use grep Before cat
+
+Before reading any file, grep for what you need. If grep answers your
+question, don't read the file.
+
+```bash
+grep "export.*function\|export.*const\|export type" path/to/file.ts
+grep -n "key-pattern:" path/to/file.ts
+```
+
+If your project uses AST-aware search tools (e.g., ast-grep), prefer those
+over regex for structural queries — they match AST nodes, not strings, so they
+won't false-positive on commented-out code, string literals, or nested scopes.
+
+### 3. Summarize Between Tasks
+
+After completing each task (one full cycle through the workflow), summarize
+before starting the next:
+
+- What changed (1-2 sentences)
+- Any decisions affecting subsequent work
+- Forget intermediate exploration — keep only current state and constraints
+
+### 4. Compact After 5+ Tasks
+
+If you've completed 5+ tasks in one session, pause and compact:
+
+1. Summarize all completed work (max 500 words)
+2. List current file state and pending work
+3. Discard exploration context from earlier tasks
+4. Write any qualifying decision logs or error entries (see below)
+
+Without compaction, accuracy degrades roughly as follows (heuristic, not measurement):
+
+```
+Tasks 1-5:   ~90% signal
+Tasks 6-10:  ~60% signal
+Tasks 11+:   ~30% signal
+```
+
+**Framework-dependent action:**
+
+- If your framework supports auto-compaction (e.g., Claude Code): trigger it now
+- If not: produce a session digest as a message summarizing completed work,
+  pending items, and active constraints, then continue
+
+### 5. Compact → Session Decisions Pipeline
+
+Compacting produces two outputs with different audiences:
+
+**Session digest** (for the _current_ session's context window):
+
+- What changed (1-2 sentences per task)
+- Current file state and pending work
+- Active constraints for remaining work
+- This replaces the full history — it IS the compacted context
+
+**Decision log** (for _future_ sessions and contributors):
+
+- Written following session-decisions guidance
+- Only when durable decisions were made (architectural, convention, policy)
+- Stored in `docs/decisions/YYYY-MM-DD-<topic>.md`
+- Future agents scan frontmatter to find relevant context without reading everything
+
+The connection: when you compact, check whether any completed task included a
+qualifying decision. If so, write the decision log _during compacting_ while the
+reasoning is fresh — don't wait until session end.
+
+```
+Compacting checklist:
+  □ Summarize completed work (session digest)
+  □ List pending work and active constraints
+  □ For each completed task: did it set a durable decision?
+    → Yes: write docs/decisions/YYYY-MM-DD-<topic>.md now
+    → No: skip
+  □ Discard exploration context
+```
+
+This ensures decisions are captured when reasoning is fresh, and the session
+digest keeps the current context window lean for the next task.
+
+---
+
+## Forbidden Patterns
+
+| Pattern                                     | Why Forbidden                                               |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| `cat` on any file over 50 lines             | Wastes context on low-information content                   |
+| Reading a file "to get familiar"            | Familiarity comes from types and tests, not implementations |
+| Reading sibling implementations without a task-specific question | Burns context and invites pattern cargo-culting             |
+| Skipping Survey to start coding immediately | Produces code that doesn't fit the codebase                 |
+| Reading full test file bodies during Anchor | Test names are the spec; bodies are for the RED phase       |
+| Loading all directives for every task       | Use progressive disclosure — load only what applies         |
+| Starting a second task without compacting   | Context from task 1 rots and confuses task 2                |
+
+---
+
+## Quick Reference
+
+| Phase       | Read                                         | Budget       | Know After              |
+| ----------- | -------------------------------------------- | ------------ | ----------------------- |
+| **Survey**  | Project instructions, tree, exports, scripts | ~2K tokens   | Where things live       |
+| **Anchor**  | Types, test names, one reference, directives | ~3K tokens   | What correct looks like |
+| **Filter**  | Specific files task touches, dependents      | ~2-5K tokens | What to change          |
+| **Execute** | Follow project implementation workflow       | Per-step     | Correct implementation  |
+
+---
+
+_This directive is mandatory before any implementation, bug fix, or refactor. It ensures the agent starts work with maximum information density and minimum context waste._
