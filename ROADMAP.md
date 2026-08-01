@@ -199,6 +199,10 @@ draining, strict OpenSpec validation, formatting, linting, type checking, 45
 deterministic tests, and a production build. Memory is process-local; exact
 mid-run checkpoint recovery remains outside the initial implementation.
 
+The service entry point is `src/index.ts`; the HTTP boundary is implemented in
+`src/http-service.ts`, and session memory is implemented in `src/memory.ts`.
+The default deterministic suite does not bind a socket or call Anthropic/Tavily.
+
 ### Tasks
 
 - [x] 6.1 Add failing memory tests for a YAML-declared sliding window, configurable 50-message default, same-session follow-up context, and cross-session isolation.

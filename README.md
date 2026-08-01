@@ -46,8 +46,10 @@ structured output receives one repair attempt before returning the typed
 untrusted evidence and is never treated as instructions.
 
 The default test suite uses deterministic transports and AgentFlow lifecycle
-hooks; it makes no Anthropic or Tavily calls. The installed CG AgentFlow
-version does not expose provider injection on `createAgentFromFile`, so the
+hooks; it makes no Anthropic or Tavily calls. HTTP service tests use in-process
+request/response doubles, so the default suite also requires no socket access.
+The installed CG AgentFlow version does not expose provider injection on
+`createAgentFromFile`, so the
 limitation and test workaround are recorded in
 [`docs/agent-flow-findings.md`](./docs/agent-flow-findings.md).
 
@@ -100,15 +102,15 @@ The required package names are `@cadmusgroup-llc/cg-agent-flow-core`, `-llm`,
 `-tools`, `-agents`, `-guardrails`, `-memory`, `-observability`, and
 `-evaluation`; all are pinned to `0.17.1`, as retrieved from the authorized
 GitHub Packages registry on 2026-08-01. Context7 does not provide documentation
-for this private package family. Before Phase 5, add an integration test that
-covers the installed `createAgentFromFile` factory API and resolves any
-documentation/package discrepancy. Do not replace these packages with
+for this private package family. The installed `createAgentFromFile` factory
+API is covered by the Phase 5 deterministic integration tests. Do not replace these packages with
 similarly named public packages.
 
 ## Delivery status
 
-Phases 1–5 are complete. Phase 5 was verified with 34 deterministic tests,
+Phases 1–6 are complete. Phase 6 was verified with 45 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, and a
-production build. Phase 6 adds the HTTP service and session memory. See
+production build. Phase 7 is the next implementation phase and adds
+production controls and observability. See
 [`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
 exit criteria.
