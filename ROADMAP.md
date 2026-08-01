@@ -4,7 +4,9 @@
 
 This roadmap turns [`REQUIREMENTS.md`](./REQUIREMENTS.md) into an ordered implementation plan for the initial AI research agent release. `REQUIREMENTS.md` remains the authoritative product contract: this file tracks delivery but does not replace, weaken, or expand those requirements. Any scope change must be reconciled with the requirements first.
 
-All application, test, infrastructure, and deployment tasks below begin unchecked. Creating this roadmap does not mean the product has been implemented.
+Application, test, infrastructure, and deployment tasks below are checked as
+their phase evidence is completed. An unchecked task is not implemented, and a
+phase is not complete until every task and exit criterion passes.
 
 ## How to use this roadmap
 
@@ -97,8 +99,7 @@ tests, and a production build; no provider calls are made by the test suite.
 
 **Status:** Complete on 2026-08-01. Verified with 19 deterministic tests,
 strict OpenSpec validation, formatting, linting, type checking, a production
-build, and a live Tavily check returning five normalized results. The next
-incomplete roadmap work is Phase 4.
+build, and a live Tavily check returning five normalized results.
 
 ### Tasks
 

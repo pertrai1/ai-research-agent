@@ -3,9 +3,9 @@
 Read-only autonomous web research agent. Phases 3 and 4 provide dependency-
 injected, bounded `web_search` and `read_page` capabilities with validated
 results, SSRF-resistant URL handling, timeout and retry controls, bounded text
-extraction, untrusted-content delimiters, and privacy-safe telemetry. The
-project does not yet expose research endpoints or agent assembly; those are
-planned for later roadmap phases.
+extraction, untrusted-content delimiters, and privacy-safe telemetry. Phase 5
+assembles those capabilities into a YAML-defined CG AgentFlow ReAct agent with
+source grounding. The HTTP API and conversation memory remain Phase 6 work.
 
 ## Implemented capabilities
 
@@ -21,9 +21,30 @@ responses are reduced to bounded readable text; scripts, styles, and raw markup
 are removed. Retrieved text is explicitly marked as untrusted evidence, so
 page instructions are not treated as agent instructions.
 
-Both capabilities are currently library-level tools with injected transports.
-They are not public HTTP endpoints and are not yet registered with a CG
-AgentFlow agent.
+Both capabilities are library-level tools with injected transports and are
+registered by the Phase 5 research-agent assembly. The assembly is available
+through [`src/research-agent.ts`](./src/research-agent.ts); it is not yet a
+public HTTP endpoint.
+
+## Research agent
+
+The agent specification is [`config/agents/research-agent.yaml`](./config/agents/research-agent.yaml).
+It declares a ReAct agent using Anthropic, temperature `0.2`, a 1,500-token
+output limit, at most 15 iterations, bounded observations, and exactly
+`web_search` plus `read_page`. Runtime code supplies the injected tool
+implementations and calls CG AgentFlow's `createAgentFromFile` factory.
+
+Each run records URLs returned by successful tool calls. A final source is
+accepted only when its URL appears in that run's observed-URL ledger. Invalid
+structured output receives one repair attempt before returning the typed
+`INVALID_AGENT_OUTPUT` failure. Retrieved page text remains explicitly
+untrusted evidence and is never treated as instructions.
+
+The default test suite uses deterministic transports and AgentFlow lifecycle
+hooks; it makes no Anthropic or Tavily calls. The installed CG AgentFlow
+version does not expose provider injection on `createAgentFromFile`, so the
+limitation and test workaround are recorded in
+[`docs/agent-flow-findings.md`](./docs/agent-flow-findings.md).
 
 ## Requirements
 
@@ -81,7 +102,8 @@ similarly named public packages.
 
 ## Delivery status
 
-Phases 1–4 are complete. Phase 5 will assemble the YAML-defined CG AgentFlow
-ReAct agent and register only `web_search` and `read_page`; Phase 6 will add the
-HTTP service and session memory. See [`ROADMAP.md`](./ROADMAP.md) for the
-authoritative implementation sequence and exit criteria.
+Phases 1–5 are complete. Phase 5 was verified with 34 deterministic tests,
+strict OpenSpec validation, formatting, linting, type checking, and a
+production build. Phase 6 will add the HTTP service and session memory. See
+[`ROADMAP.md`](./ROADMAP.md) for the authoritative implementation sequence and
+exit criteria.
