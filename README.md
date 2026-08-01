@@ -1,5 +1,12 @@
 # AI Research Agent
 
+This project reproduces the research-agent application described in
+[“7 Steps to Building and Deploying Your First Autonomous Agent”](https://www.kdnuggets.com/7-steps-to-building-and-deploying-your-first-autonomous-agent),
+using TypeScript and CG AgentFlow in place of Python and LangGraph. The goal
+is to preserve the tutorial’s observable flow—research a topic with web tools,
+retain conversation context, apply safety boundaries, and expose the agent
+through HTTP—while evaluating what CG AgentFlow contributes to the design.
+
 ## Application overview
 
 This project is a read-only autonomous web research service. A caller submits
@@ -20,9 +27,10 @@ graceful shutdown. `GET /health` is a provider-free liveness check; `GET
 /ready` checks authenticated service readiness; `POST /research` runs a
 research request.
 
-## What CG AgentFlow contributes
+## What CG AgentFlow contributes to the tutorial reproduction
 
-CG AgentFlow supplies the agent runtime and the declarative integration layer.
+CG AgentFlow supplies the agent runtime and declarative integration layer that
+LangGraph supplies in the original tutorial.
 The application keeps research-specific concerns—Tavily and page retrieval,
 SSRF policy, source grounding, public controls, and privacy-safe service
 telemetry—in its own code. AgentFlow handles the general agent concerns around
@@ -83,23 +91,6 @@ application’s own controls:
   service authentication, or sanitized telemetry.
 - Framework memory is process-local here. Restarting the service clears the
   conversation window, and exact mid-run checkpoint recovery is not provided.
-- The private CG AgentFlow package family is not documented by Context7. The
-  installed `createAgentFromFile` API is therefore covered by a deterministic
-  integration test and should not be inferred from similarly named public
-  packages.
-
-### Optional framework showcase
-
-The showcase uses a separate YAML spec and does not alter the production
-agent. It demonstrates guardrails, opt-in tracing, and deterministic
-evaluation:
-
-```sh
-npx vitest run test/framework-showcase.test.ts
-```
-
-No live Anthropic or Tavily call, network exporter, HTTP route, framework retry,
-or persistent evaluation report is enabled by this showcase command.
 
 ## Requirements
 
@@ -135,6 +126,14 @@ cp .env.example .env
 set -a
 . ./.env
 set +a
+```
+
+`RESEARCH_API_KEY` is a service key that you generate and choose yourself; it
+does not come from Anthropic or Tavily. Generate a strong value with OpenSSL,
+then paste the output into `.env`:
+
+```sh
+openssl rand -hex 32
 ```
 
 `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, and `RESEARCH_API_KEY` are optional for
